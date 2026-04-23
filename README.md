@@ -104,7 +104,7 @@ Gerenciamento de dados pessoais e configurações de segurança.
 * **RN07.07 (Interface):** A tela de perfil deve ser organizada em abas separadas para alteração de nome e senha.
 
 ---
-*Em caso de divergência entre o comportamento da aplicação e este documento, deve-se priorizar as Regras de Negócio e reportar um Bug.*
+
 
 ## Estrutura
 
@@ -239,9 +239,3 @@ npm run start:web
 - Pix simulado com QR Code estatico
 - Extrato paginado com filtros de 7, 15 e 30 dias
 
-## Observacao importante
-
-Alguns residuos das pastas legadas ainda podem existir no workspace por restricao de permissao do ambiente onde a migracao foi executada, mas a estrutura ativa do projeto agora esta concentrada em:
-
-- `packages/api`
-- `packages/web`
