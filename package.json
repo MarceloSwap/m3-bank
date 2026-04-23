@@ -1,0 +1,17 @@
+{
+  "name": "m3-bank",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/api",
+    "packages/web"
+  ],
+  "scripts": {
+    "dev:api": "npm --workspace packages/api run dev",
+    "dev:web": "npm --workspace packages/web run dev",
+    "dev": "npm run dev:api",
+    "seed": "npm --workspace packages/api run seed",
+    "start:api": "npm --workspace packages/api run start",
+    "start:web": "npm --workspace packages/web run start"
+  }
+}
