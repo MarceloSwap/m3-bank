@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/router';
+import styled, { keyframes } from 'styled-components';
 import Field from '../../src/components/Field';
 import Modal from '../../src/components/Modal';
 import ProtectedPage from '../../src/components/ProtectedPage';
@@ -9,6 +10,7 @@ import api from '../../src/lib/api';
 
 export default function TransferPage() {
   const { refreshAccount, session } = useAuth();
+  const router = useRouter();
   const [form, setForm] = useState({
     accountNumber: '',
     accountDigit: '',
@@ -20,6 +22,9 @@ export default function TransferPage() {
   const [modal, setModal] = useState(null);
   const [accounts, setAccounts] = useState([]);
   const [showAccountList, setShowAccountList] = useState(false);
+  const [isPopoverMounted, setIsPopoverMounted] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const popoverRef = useRef(null);
 
   useEffect(() => {
     async function loadAccounts() {
@@ -41,6 +46,31 @@ export default function TransferPage() {
     }
   }, [session]);
 
+  useEffect(() => {
+    function handleOutsideClick(event) {
+      if (!showAccountList) {
+        return;
+      }
+
+      if (popoverRef.current && !popoverRef.current.contains(event.target)) {
+        setShowAccountList(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [showAccountList]);
+
+  useEffect(() => {
+    if (showAccountList) {
+      setIsPopoverMounted(true);
+      return undefined;
+    }
+
+    const timeoutId = setTimeout(() => setIsPopoverMounted(false), 180);
+    return () => clearTimeout(timeoutId);
+  }, [showAccountList]);
+
   function selectAccount(account) {
     setForm({
       ...form,
@@ -48,7 +78,19 @@ export default function TransferPage() {
       accountDigit: account.digit.toString()
     });
     setShowAccountList(false);
+    setSearchTerm('');
   }
+
+  const filteredAccounts = accounts.filter((account) => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) {
+      return true;
+    }
+
+    const owner = account.ownerName?.toLowerCase() || '';
+    const number = `${account.number}-${account.digit}`.toLowerCase();
+    return owner.includes(term) || number.includes(term);
+  });
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -93,7 +135,19 @@ export default function TransferPage() {
       setModal({
         type: 'success',
         title: 'Transferência',
-        message: data.message
+        message: `${data.message}. Deseja fazer outra operação ou voltar para a Home?`,
+        actions: [
+          {
+            label: 'Fazer outra transferência',
+            onClick: () => setModal(null),
+            variant: 'primary'
+          },
+          {
+            label: 'Voltar para Home',
+            onClick: () => router.push('/home'),
+            variant: 'secondary'
+          }
+        ]
       });
     } catch (error) {
       setModal({
@@ -109,37 +163,45 @@ export default function TransferPage() {
       <Shell
         title="Transferências"
         subtitle="Selecione uma conta da lista ou digite manualmente os dados para transferir."
+        headerAction={(
+          <PopoverWrapper ref={popoverRef}>
+            <ListToggleButton
+              type="button"
+              onClick={() => setShowAccountList(!showAccountList)}
+            >
+              {showAccountList ? 'Ocultar' : 'Mostrar'} contas disponíveis ({accounts.length})
+            </ListToggleButton>
+            {isPopoverMounted ? (
+              <PopoverPanel $isOpen={showAccountList}>
+                <SearchInput
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Buscar por titular ou conta"
+                />
+                <AccountList>
+                  {filteredAccounts.length === 0 ? (
+                    <EmptyMessage>Nenhuma conta disponível para transferência.</EmptyMessage>
+                  ) : (
+                    filteredAccounts.map((account) => (
+                      <AccountItem
+                        key={`${account.number}-${account.digit}`}
+                        type="button"
+                        onClick={() => selectAccount(account)}
+                      >
+                        <AccountInfo>
+                          <strong>{account.ownerName}</strong>
+                          <small>Conta: {account.number}-{account.digit}</small>
+                        </AccountInfo>
+                        <SelectButton>Selecionar</SelectButton>
+                      </AccountItem>
+                    ))
+                  )}
+                </AccountList>
+              </PopoverPanel>
+            ) : null}
+          </PopoverWrapper>
+        )}
       >
-        <AccountListSection>
-          <ListToggleButton
-            type="button"
-            onClick={() => setShowAccountList(!showAccountList)}
-          >
-            {showAccountList ? 'Ocultar' : 'Mostrar'} contas disponíveis ({accounts.length})
-          </ListToggleButton>
-
-          {showAccountList && (
-            <AccountList>
-              {accounts.length === 0 ? (
-                <EmptyMessage>Nenhuma conta disponível para transferência.</EmptyMessage>
-              ) : (
-                accounts.map((account) => (
-                  <AccountItem
-                    key={`${account.number}-${account.digit}`}
-                    onClick={() => selectAccount(account)}
-                  >
-                    <AccountInfo>
-                      <strong>{account.ownerName}</strong>
-                      <small>Conta: {account.number}-{account.digit}</small>
-                    </AccountInfo>
-                    <SelectButton>Selecionar</SelectButton>
-                  </AccountItem>
-                ))
-              )}
-            </AccountList>
-          )}
-        </AccountListSection>
-
         <FormCard onSubmit={handleSubmit}>
           <Field
             label="Número da conta"
@@ -182,6 +244,7 @@ export default function TransferPage() {
             type={modal.type}
             title={modal.title}
             message={modal.message}
+            actions={modal.actions}
             onClose={() => setModal(null)}
           />
         ) : null}
@@ -210,19 +273,18 @@ const SubmitButton = styled.button`
   font-weight: 700;
 `;
 
-const AccountListSection = styled.section`
-  margin-bottom: 24px;
+const PopoverWrapper = styled.div`
+  position: relative;
 `;
 
 const ListToggleButton = styled.button`
-  padding: 12px 20px;
+  padding: 8px 16px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.06);
   color: ${({ theme }) => theme.colors.light};
   cursor: pointer;
   font-weight: 600;
-  margin-bottom: 16px;
 
   &:hover {
     background: rgba(255, 255, 255, 0.1);
@@ -232,15 +294,46 @@ const ListToggleButton = styled.button`
 const AccountList = styled.div`
   display: grid;
   gap: 12px;
-  max-height: 300px;
+  max-height: min(360px, 55vh);
   overflow-y: auto;
   padding: 16px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
 `;
 
-const AccountItem = styled.div`
+const PopoverPanel = styled.div`
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 30;
+  width: min(480px, calc(100vw - 40px));
+  border-radius: 16px;
+  background: rgba(8, 14, 28, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+  transform-origin: top right;
+  animation: ${({ $isOpen }) => ($isOpen ? popoverEnter : popoverExit)} 0.18s ease forwards;
+`;
+
+const SearchInput = styled.input`
+  width: calc(100% - 32px);
+  margin: 16px 16px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: ${({ theme }) => theme.colors.light};
+  outline: none;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 2px rgba(240, 208, 100, 0.16);
+  }
+`;
+
+const AccountItem = styled.button`
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -250,6 +343,8 @@ const AccountItem = styled.div`
   border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
   transition: all 0.2s ease;
+  width: 100%;
+  text-align: left;
 
   &:hover {
     background: rgba(255, 255, 255, 0.08);
@@ -288,4 +383,26 @@ const EmptyMessage = styled.p`
   text-align: center;
   color: rgba(255, 255, 255, 0.6);
   padding: 20px;
+`;
+
+const popoverEnter = keyframes`
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+`;
+
+const popoverExit = keyframes`
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
 `;

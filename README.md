@@ -51,6 +51,7 @@ Este é o módulo mais crítico do sistema e possui regras estritas de integrida
   * **Das 06h00 às 19h59 (Diurno):** Limite máximo de **R$ 10.000,00** por transação.
   * **Das 20h00 às 05h59 (Noturno):** Limite máximo cai para **R$ 1.000,00** por transação. Valores superiores devem ser bloqueados com a mensagem: *"Valor excede o limite noturno permitido"*.
 * **RN03.11 (Lista de Contas):** A tela de transferências deve apresentar uma lista expansível com todas as contas ativas disponíveis para transferência, exibindo nome do titular e número da conta. A conta própria do usuário logado deve ser automaticamente excluída da lista.
+* **RN03.12 (Ações no Header):** Na rota `/transferencia`, o botão de alternância da lista de contas disponíveis deve ficar na área de ações do cabeçalho (ao lado do badge da conta e do botão `Sair`). Ao clicar em uma conta da lista, os campos de número e dígito devem ser preenchidos automaticamente.
 
 ---
 
@@ -61,11 +62,12 @@ Funcionalidade para creditar valores em contas existentes.
 * **RN04.02:** Os campos numéricos (Número e Dígito da conta) devem aceitar **apenas números**.
 * **RN04.03:** O campo `Descrição` é de preenchimento obrigatório.
 * **RN04.04 (Limites):** 
-  * Valor mínimo para depósito: **R$ 1,00**
+  * Valor mínimo para depósito: **R$ 10,00**
   * Valor máximo para depósito: **R$ 10.000,00**
 * **RN04.05 (Processamento):** O valor depositado deve ser creditado imediatamente no saldo da conta destino.
 * **RN04.06:** O sucesso da operação deve exibir uma mensagem confirmando o depósito e o novo saldo, além de registrar a transação no extrato como "Depósito".
 * **RN04.07 (Transações Síncronas):** Em caso de falha, a operação deve ser completamente revertida (Rollback).
+* **RN04.08 (Lista de Contas e Header):** Na rota `/deposito`, o botão de alternância da lista de contas disponíveis deve ficar na área de ações do cabeçalho (ao lado do badge da conta e do botão `Sair`). A lista deve exibir apenas contas ativas diferentes da conta logada e, ao clicar em um item, preencher automaticamente número e dígito da conta destino.
 
 ---
 
@@ -83,12 +85,13 @@ Visualização do histórico financeiro.
 
 * **RN06.01:** O painel principal deve exibir o **saldo disponível atualizado** no momento do acesso.
 * **RN06.02 (API):** A listagem do extrato deve ser suportada por paginação no back-end (limite de itens por página).
-* **RN06.03 (Formatação Visual):** Cada registro deve exibir a data da realização e o tipo (`Abertura de conta`, `Transferência enviada`, `Transferência recebida`, `Depósito`).
+* **RN06.03 (Formatação Visual):** Cada registro de transação deve exibir data e hora, tipo de transação (Abertura de conta, Transferência enviada, Transferência recebida, Depósito, PIX), valor, descrição (ou "-"), favorecido e conta do favorecido (quando houver). O campo "Nome de quem recebeu" não deve ser exibido separadamente quando a informação já estiver representada como "Favorecido".
 * **RN06.04 (Cores e Sinais):**
   * Valores de **Saída** (Débito) devem ser renderizados na cor **Vermelha** e prefixados com sinal negativo `(-)`.
   * Valores de **Entrada** (Crédito) devem ser renderizados na cor **Verde**.
 * **RN06.05:** Transações sem comentário devem exibir um hífen `(-)` no lugar da descrição.
 * **RN06.06 (Filtros):** O usuário deve ser capaz de filtrar o extrato através de botões de período rápido: *"Últimos 7 dias"*, *"Últimos 15 dias"* e *"Últimos 30 dias"*.
+* **RN06.07 (Home - Movimentações Recentes):** O painel de movimentações recentes da Home deve exibir a descrição da transação e, quando existir conta relacionada, mostrar também o número da conta no mesmo bloco de informação.
 
 ---
 
@@ -104,7 +107,7 @@ Gerenciamento de dados pessoais e configurações de segurança.
 * **RN07.07 (Interface):** A tela de perfil deve ser organizada em abas separadas para alteração de nome e senha.
 
 ---
-*Em caso de divergência entre o comportamento da aplicação e este documento, deve-se priorizar as Regras de Negócio e reportar um Bug.*
+
 
 ## Estrutura
 
@@ -138,110 +141,91 @@ Crie um banco MySQL com o nome:
 CREATE DATABASE m3_bank;
 ```
 
-Depois crie o arquivo `packages/api/.env` com base em `packages/api/.env.example`:
+**Observações:**
+- O banco usa nomes de tabelas e colunas totalmente em português.
+- As tabelas incluem: `usuarios`, `contas`, `transferencias`, `depositos`, `pagamentos_pix`, `lancamentos`.
 
+## 3. Configurar variáveis de ambiente
+
+### API (packages/api/.env)
 ```env
-PORT=3333
+PORT=3334
 DB_HOST=localhost
 DB_PORT=3306
 DB_USER=root
-DB_PASSWORD=root
+DB_PASSWORD=mfs@123
 DB_NAME=m3_bank
 JWT_SECRET=m3-bank-secret
 APP_TIMEZONE=America/Sao_Paulo
 ```
 
-Observacoes:
-
-- `DB_NAME` ficou definido como `m3_bank`
-- a API cria a estrutura das tabelas automaticamente ao iniciar
-- o seed usa esse mesmo banco
-
-## 3. Popular o banco com massa inicial
-
-Execute na raiz:
-
-```bash
-npm run seed
-```
-
-Arquivos relacionados:
-
-- `packages/api/scripts/seed.json`
-- `packages/api/scripts/seed.js`
-
-## 4. Subir a API
-
-Execute na raiz:
-
-```bash
-npm run dev:api
-```
-
-Enderecos padrao:
-
-- API REST: `http://localhost:3333/api`
-- Swagger: `http://localhost:3333/docs`
-- GraphQL: `http://localhost:3333/graphql`
-
-## 5. Configurar o frontend
-
-O frontend foi atualizado para `Next.js 15.5.15`.
-
-Crie o arquivo `packages/web/.env.local` com base em `packages/web/.env.local.example`:
-
+### Frontend (packages/web/.env.local)
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:3333/api
+NEXT_PUBLIC_API_URL=http://localhost:3334/api
 ```
 
-## 6. Subir o frontend
-
-Em outro terminal, na raiz do projeto:
-
-```bash
-npm run dev:web
-```
-
-Endereco padrao:
-
-- Frontend: `http://localhost:3000`
-
-## Ordem recomendada para subir tudo
-
-1. `npm install`
-2. Criar o banco `m3_bank`
-3. Criar `packages/api/.env`
-4. Criar `packages/web/.env.local`
-5. `npm run seed`
-6. `npm run dev:api`
-7. `npm run dev:web`
-
-## Scripts disponiveis
+## 4. Instalar dependências
 
 Na raiz do projeto:
-
 ```bash
-npm run dev:api
-npm run dev:web
-npm run seed
-npm run start:api
-npm run start:web
+npm install
 ```
 
-## Regras de negocio implementadas
+## 5. Popular o banco com dados iniciais
 
-- Login com JWT expirando em 1 hora
-- Bloqueio apos 3 tentativas falhas por 5 minutos
-- Cadastro com saldo inicial opcional
-- Transferência com valor mínimo de R$ 10,00
-- Token especial `123456` para valores acima de R$ 5.000,00
-- Limite dinamico por horario
-- Pix simulado com QR Code estatico
-- Extrato paginado com filtros de 7, 15 e 30 dias
+```bash
+npm run seed
+```
 
-## Observacao importante
+## 6. Executar as aplicações
 
-Alguns residuos das pastas legadas ainda podem existir no workspace por restricao de permissao do ambiente onde a migracao foi executada, mas a estrutura ativa do projeto agora esta concentrada em:
+### API (porta 3334):
+```bash
+npm run dev:api
+```
 
-- `packages/api`
-- `packages/web`
+### Frontend (porta 3000):
+```bash
+npm run dev:web
+```
+
+## URLs de acesso
+
+- **Frontend:** http://localhost:3000
+- **API REST:** http://localhost:3334/api
+- **Swagger Docs:** http://localhost:3334/docs
+- **GraphQL:** http://localhost:3334/graphql
+- **Health Check:** http://localhost:3334/health
+
+## Scripts disponíveis
+
+```bash
+npm run dev:api      # API em modo desenvolvimento
+npm run dev:web      # Frontend em modo desenvolvimento
+npm run seed         # Popular banco com dados de teste
+npm run start:api    # API em modo produção
+npm run start:web    # Frontend em modo produção
+```
+
+## Ordem recomendada para primeira execução
+
+1. Criar banco `m3_bank` no MySQL
+2. `npm install`
+3. Configurar `packages/api/.env` e `packages/web/.env.local`
+4. `npm run seed`
+5. `npm run dev:api` (em um terminal)
+6. `npm run dev:web` (em outro terminal)
+
+## Limpeza do banco (se necessário)
+
+Para resetar completamente o banco:
+```sql
+DROP DATABASE m3_bank;
+CREATE DATABASE m3_bank;
+```
+Depois execute `npm run seed` novamente.
+USE m3_bank;
+
+populando informações iniciais via script
+
+```

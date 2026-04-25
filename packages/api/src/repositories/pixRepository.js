@@ -1,6 +1,6 @@
 async function create(connection, payment) {
   const [result] = await connection.query(
-    `INSERT INTO pix_payments (account_id, amount, description, qr_code_reference)
+    `INSERT INTO pagamentos_pix (conta_id, valor, descricao, referencia_qr_code)
      VALUES (?, ?, ?, ?)`,
     [payment.accountId, payment.amount, payment.description, payment.qrCodeReference]
   );
@@ -9,7 +9,7 @@ async function create(connection, payment) {
 }
 
 async function clearAll(connection) {
-  await connection.query('DELETE FROM pix_payments');
+  await connection.query('DELETE FROM pagamentos_pix');
 }
 
 module.exports = {

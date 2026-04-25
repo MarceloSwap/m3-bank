@@ -1,28 +1,23 @@
 async function findByEmail(connection, email) {
-  const [rows] = await connection.query('SELECT * FROM users WHERE email = ?', [email]);
+  const [rows] = await connection.query('SELECT * FROM usuarios WHERE email = ?', [email]);
   return rows[0] || null;
 }
 
 async function findById(connection, id) {
-  const [rows] = await connection.query('SELECT * FROM users WHERE id = ?', [id]);
+  const [rows] = await connection.query('SELECT * FROM usuarios WHERE id = ?', [id]);
   return rows[0] || null;
 }
 
 async function create(connection, user) {
   const [result] = await connection.query(
-    `INSERT INTO users
-      (name, email, password, cpf, street, neighborhood, city, state, zip_code)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO usuarios
+      (nome, email, senha, cpf)
+     VALUES (?, ?, ?, ?)`,
     [
       user.name,
       user.email,
       user.password,
-      user.cpf,
-      user.street,
-      user.neighborhood,
-      user.city,
-      user.state,
-      user.zipCode
+      user.cpf
     ]
   );
 
@@ -31,24 +26,24 @@ async function create(connection, user) {
 
 async function updateLoginAttempts(connection, userId, failedLoginAttempts, lockUntil) {
   await connection.query(
-    'UPDATE users SET failed_login_attempts = ?, lock_until = ? WHERE id = ?',
+    'UPDATE usuarios SET tentativas_falha_login = ?, bloqueado_ate = ? WHERE id = ?',
     [failedLoginAttempts, lockUntil, userId]
   );
 }
 
 async function resetLoginAttempts(connection, userId) {
   await connection.query(
-    'UPDATE users SET failed_login_attempts = 0, lock_until = NULL WHERE id = ?',
+    'UPDATE usuarios SET tentativas_falha_login = 0, bloqueado_ate = NULL WHERE id = ?',
     [userId]
   );
 }
 
 async function updateName(connection, userId, name) {
-  await connection.query('UPDATE users SET name = ? WHERE id = ?', [name, userId]);
+  await connection.query('UPDATE usuarios SET nome = ? WHERE id = ?', [name, userId]);
 }
 
 async function updatePassword(connection, userId, password) {
-  await connection.query('UPDATE users SET password = ? WHERE id = ?', [password, userId]);
+  await connection.query('UPDATE usuarios SET senha = ? WHERE id = ?', [password, userId]);
 }
 
 module.exports = {

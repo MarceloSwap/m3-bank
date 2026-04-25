@@ -1,15 +1,16 @@
 async function createEntry(connection, entry) {
   await connection.query(
-    `INSERT INTO ledger_entries
-      (account_id, direction, entry_type, amount, description, related_account)
-     VALUES (?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO lancamentos
+      (conta_id, direcao, tipo_lancamento, valor, descricao, conta_relacionada, nome_favorecido)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
     [
       entry.accountId,
       entry.direction,
       entry.entryType,
       entry.amount,
       entry.description || null,
-      entry.relatedAccount || null
+      entry.relatedAccount || null,
+      entry.favoredName || null
     ]
   );
 }
@@ -19,18 +20,18 @@ async function findByAccountId(connection, accountId, limit, offset, periodDays)
   let dateClause = '';
 
   if (periodDays) {
-    dateClause = 'AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
+    dateClause = 'AND criado_em >= DATE_SUB(NOW(), INTERVAL ? DAY)';
     params.push(periodDays);
   }
 
   params.push(limit, offset);
 
   const [rows] = await connection.query(
-    `SELECT id, direction, entry_type, amount, description, related_account, created_at
-     FROM ledger_entries
-     WHERE account_id = ?
+    `SELECT id, direcao, tipo_lancamento, valor, descricao, conta_relacionada, nome_favorecido, criado_em
+     FROM lancamentos
+     WHERE conta_id = ?
      ${dateClause}
-     ORDER BY created_at DESC, id DESC
+     ORDER BY criado_em DESC, id DESC
      LIMIT ? OFFSET ?`,
     params
   );
@@ -43,14 +44,14 @@ async function countByAccountId(connection, accountId, periodDays) {
   let dateClause = '';
 
   if (periodDays) {
-    dateClause = 'AND created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
+    dateClause = 'AND criado_em >= DATE_SUB(NOW(), INTERVAL ? DAY)';
     params.push(periodDays);
   }
 
   const [[row]] = await connection.query(
     `SELECT COUNT(*) AS total
-     FROM ledger_entries
-     WHERE account_id = ?
+     FROM lancamentos
+     WHERE conta_id = ?
      ${dateClause}`,
     params
   );
@@ -59,7 +60,7 @@ async function countByAccountId(connection, accountId, periodDays) {
 }
 
 async function clearAll(connection) {
-  await connection.query('DELETE FROM ledger_entries');
+  await connection.query('DELETE FROM lancamentos');
 }
 
 module.exports = {

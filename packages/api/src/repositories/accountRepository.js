@@ -1,6 +1,6 @@
 async function create(connection, userId, accountNumber, accountDigit, balance) {
   const [result] = await connection.query(
-    'INSERT INTO accounts (user_id, account_number, account_digit, balance) VALUES (?, ?, ?, ?)',
+    'INSERT INTO contas (usuario_id, numero_conta, digito_conta, saldo) VALUES (?, ?, ?, ?)',
     [userId, accountNumber, accountDigit, balance]
   );
 
@@ -9,10 +9,10 @@ async function create(connection, userId, accountNumber, accountDigit, balance) 
 
 async function findByUserId(connection, userId) {
   const [rows] = await connection.query(
-    `SELECT a.*, u.name, u.email, u.cpf, u.street, u.neighborhood, u.city, u.state, u.zip_code
-     FROM accounts a
-     JOIN users u ON u.id = a.user_id
-     WHERE a.user_id = ?`,
+    `SELECT c.*, u.nome, u.email, u.cpf
+     FROM contas c
+     JOIN usuarios u ON u.id = c.usuario_id
+     WHERE c.usuario_id = ?`,
     [userId]
   );
 
@@ -21,10 +21,10 @@ async function findByUserId(connection, userId) {
 
 async function findByNumberAndDigit(connection, accountNumber, accountDigit) {
   const [rows] = await connection.query(
-    `SELECT a.*, u.name, u.email
-     FROM accounts a
-     JOIN users u ON u.id = a.user_id
-     WHERE a.account_number = ? AND a.account_digit = ?`,
+    `SELECT c.*, u.nome, u.email
+     FROM contas c
+     JOIN usuarios u ON u.id = c.usuario_id
+     WHERE c.numero_conta = ? AND c.digito_conta = ?`,
     [accountNumber, accountDigit]
   );
 
@@ -33,27 +33,27 @@ async function findByNumberAndDigit(connection, accountNumber, accountDigit) {
 
 async function findAllActive(connection) {
   const [rows] = await connection.query(
-    `SELECT a.id, a.account_number, a.account_digit, a.balance, a.active, u.name, u.email
-     FROM accounts a
-     JOIN users u ON u.id = a.user_id
-     WHERE a.active = TRUE
-     ORDER BY u.name ASC`
+    `SELECT c.id, c.numero_conta, c.digito_conta, c.saldo, c.ativa, u.nome, u.email
+     FROM contas c
+     JOIN usuarios u ON u.id = c.usuario_id
+     WHERE c.ativa = TRUE
+     ORDER BY u.nome ASC`
   );
 
   return rows;
 }
 
 async function updateBalance(connection, accountId, newBalance) {
-  await connection.query('UPDATE accounts SET balance = ? WHERE id = ?', [newBalance, accountId]);
+  await connection.query('UPDATE contas SET saldo = ? WHERE id = ?', [newBalance, accountId]);
 }
 
 async function existsAny(connection) {
-  const [[row]] = await connection.query('SELECT COUNT(*) AS total FROM accounts');
+  const [[row]] = await connection.query('SELECT COUNT(*) AS total FROM contas');
   return row.total > 0;
 }
 
 async function clearAll(connection) {
-  await connection.query('DELETE FROM accounts');
+  await connection.query('DELETE FROM contas');
 }
 
 module.exports = {

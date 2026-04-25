@@ -2,78 +2,87 @@ const pool = require('./pool');
 
 async function ensureDatabaseStructure() {
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS users (
+    CREATE TABLE IF NOT EXISTS usuarios (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      name VARCHAR(120) NOT NULL,
+      nome VARCHAR(120) NOT NULL,
       email VARCHAR(160) NOT NULL UNIQUE,
-      password VARCHAR(120) NOT NULL,
+      senha VARCHAR(120) NOT NULL,
       cpf VARCHAR(14) NOT NULL UNIQUE,
-      street VARCHAR(160) NOT NULL,
-      neighborhood VARCHAR(120) NOT NULL,
-      city VARCHAR(120) NOT NULL,
-      state VARCHAR(2) NOT NULL,
-      zip_code VARCHAR(12) NOT NULL,
-      failed_login_attempts INT NOT NULL DEFAULT 0,
-      lock_until DATETIME NULL,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+      tentativas_falha_login INT NOT NULL DEFAULT 0,
+      bloqueado_ate DATETIME NULL,
+      criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS accounts (
+    CREATE TABLE IF NOT EXISTS contas (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      user_id INT NOT NULL,
-      account_number VARCHAR(10) NOT NULL UNIQUE,
-      account_digit VARCHAR(2) NOT NULL,
-      balance DECIMAL(12,2) NOT NULL DEFAULT 0,
-      active BOOLEAN NOT NULL DEFAULT TRUE,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      CONSTRAINT fk_accounts_user
-        FOREIGN KEY (user_id) REFERENCES users(id)
+      usuario_id INT NOT NULL,
+      numero_conta VARCHAR(10) NOT NULL UNIQUE,
+      digito_conta VARCHAR(2) NOT NULL,
+      saldo DECIMAL(12,2) NOT NULL DEFAULT 0,
+      ativa BOOLEAN NOT NULL DEFAULT TRUE,
+      criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_contas_usuario
+        FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
         ON DELETE CASCADE
     )
   `);
 
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS transfers (
+    CREATE TABLE IF NOT EXISTS transferencias (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      source_account_id INT NOT NULL,
-      destination_account_id INT NOT NULL,
-      amount DECIMAL(12,2) NOT NULL,
-      description VARCHAR(255) NOT NULL,
-      authorization_token_used BOOLEAN NOT NULL DEFAULT FALSE,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      CONSTRAINT fk_transfer_source
-        FOREIGN KEY (source_account_id) REFERENCES accounts(id),
-      CONSTRAINT fk_transfer_destination
-        FOREIGN KEY (destination_account_id) REFERENCES accounts(id)
+      conta_origem_id INT NOT NULL,
+      conta_destino_id INT NOT NULL,
+      valor DECIMAL(12,2) NOT NULL,
+      descricao VARCHAR(255) NOT NULL,
+      token_autorizacao_usado BOOLEAN NOT NULL DEFAULT FALSE,
+      criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_transferencia_origem
+        FOREIGN KEY (conta_origem_id) REFERENCES contas(id),
+      CONSTRAINT fk_transferencia_destino
+        FOREIGN KEY (conta_destino_id) REFERENCES contas(id)
     )
   `);
 
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS deposits (
+    CREATE TABLE IF NOT EXISTS depositos (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      account_id INT NOT NULL,
-      amount DECIMAL(12,2) NOT NULL,
-      description VARCHAR(255) NOT NULL,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      CONSTRAINT fk_deposit_account
-        FOREIGN KEY (account_id) REFERENCES accounts(id)
+      conta_id INT NOT NULL,
+      valor DECIMAL(12,2) NOT NULL,
+      descricao VARCHAR(255) NOT NULL,
+      criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_deposito_conta
+        FOREIGN KEY (conta_id) REFERENCES contas(id)
     )
   `);
 
   await pool.query(`
-    CREATE TABLE IF NOT EXISTS ledger_entries (
+    CREATE TABLE IF NOT EXISTS pagamentos_pix (
       id INT AUTO_INCREMENT PRIMARY KEY,
-      account_id INT NOT NULL,
-      direction VARCHAR(10) NOT NULL,
-      entry_type VARCHAR(60) NOT NULL,
-      amount DECIMAL(12,2) NOT NULL,
-      description VARCHAR(255) NULL,
-      related_account VARCHAR(20) NULL,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      CONSTRAINT fk_ledger_account
-        FOREIGN KEY (account_id) REFERENCES accounts(id)
+      conta_id INT NOT NULL,
+      valor DECIMAL(12,2) NOT NULL,
+      descricao VARCHAR(255) NOT NULL,
+      referencia_qr_code VARCHAR(255) NOT NULL,
+      criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_pagamento_pix_conta
+        FOREIGN KEY (conta_id) REFERENCES contas(id)
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS lancamentos (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      conta_id INT NOT NULL,
+      direcao VARCHAR(10) NOT NULL,
+      tipo_lancamento VARCHAR(60) NOT NULL,
+      valor DECIMAL(12,2) NOT NULL,
+      descricao VARCHAR(255) NULL,
+      conta_relacionada VARCHAR(20) NULL,
+      nome_favorecido VARCHAR(120) NULL,
+      criado_em DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT fk_lancamento_conta
+        FOREIGN KEY (conta_id) REFERENCES contas(id)
         ON DELETE CASCADE
     )
   `);

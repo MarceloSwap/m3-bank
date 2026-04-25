@@ -43,19 +43,14 @@ async function run() {
     await transferRepository.clearAll(connection);
     await pixRepository.clearAll(connection);
     await accountRepository.clearAll(connection);
-    await connection.query('DELETE FROM users');
+    await connection.query('DELETE FROM usuarios');
 
     for (const user of seed.users) {
       const userId = await userRepository.create(connection, {
         name: user.name,
         email: user.email,
         password: user.password,
-        cpf: user.cpf,
-        street: user.address.street,
-        neighborhood: user.address.neighborhood,
-        city: user.address.city,
-        state: user.address.state,
-        zipCode: user.address.zipCode
+        cpf: user.cpf
       });
 
       const { accountNumber, accountDigit } = buildAccountNumbers(userId);
