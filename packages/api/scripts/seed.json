@@ -6,14 +6,7 @@
       "password": "amazonia123",
       "cpf": "18233456001",
       "createWithBalance": true,
-      "balance": 2500,
-      "address": {
-        "street": "Rua da Castanheira, 120",
-        "neighborhood": "Centro",
-        "city": "Oriximina",
-        "state": "PA",
-        "zipCode": "68270-000"
-      }
+      "balance": 2500
     },
     {
       "name": "Bruno Solimoes",
@@ -21,14 +14,7 @@
       "password": "rioverde123",
       "cpf": "26411893022",
       "createWithBalance": true,
-      "balance": 7800,
-      "address": {
-        "street": "Avenida das Araras, 88",
-        "neighborhood": "Aparecida",
-        "city": "Manaus",
-        "state": "AM",
-        "zipCode": "69010-060"
-      }
+      "balance": 7800
     },
     {
       "name": "Carla Tapajos",
@@ -36,14 +22,7 @@
       "password": "para1234",
       "cpf": "39577124039",
       "createWithBalance": false,
-      "balance": 0,
-      "address": {
-        "street": "Travessa Porto Trombetas, 41",
-        "neighborhood": "Santissimo",
-        "city": "Oriximina",
-        "state": "PA",
-        "zipCode": "68270-180"
-      }
+      "balance": 0
     },
     {
       "name": "Diego Negro",
@@ -51,14 +30,7 @@
       "password": "barco456",
       "cpf": "42055731047",
       "createWithBalance": true,
-      "balance": 11000,
-      "address": {
-        "street": "Rua Encontro das Aguas, 501",
-        "neighborhood": "Ponta Negra",
-        "city": "Manaus",
-        "state": "AM",
-        "zipCode": "69037-000"
-      }
+      "balance": 11000
     }
   ]
 }

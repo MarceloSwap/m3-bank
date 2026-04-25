@@ -1,14 +1,31 @@
 import styled from 'styled-components';
 
-export default function Modal({ type = 'info', title, message, onClose }) {
+export default function Modal({ type = 'info', title, message, onClose, actions = [] }) {
+  const hasActions = actions.length > 0;
+
   return (
     <Backdrop onClick={onClose}>
       <Dialog role="dialog" onClick={(event) => event.stopPropagation()}>
         <Badge $type={type}>{title || 'Aviso'}</Badge>
         <p>{message}</p>
-        <CloseButton type="button" onClick={onClose}>
-          Fechar
-        </CloseButton>
+        {hasActions ? (
+          <ActionsRow>
+            {actions.map((action) => (
+              <ActionButton
+                key={action.label}
+                type="button"
+                $variant={action.variant || 'primary'}
+                onClick={action.onClick}
+              >
+                {action.label}
+              </ActionButton>
+            ))}
+          </ActionsRow>
+        ) : (
+          <CloseButton type="button" onClick={onClose}>
+            Fechar
+          </CloseButton>
+        )}
       </Dialog>
     </Backdrop>
   );
@@ -68,6 +85,32 @@ const CloseButton = styled.button`
   color: #000;
   font-weight: bold;
   padding: 12px 32px;
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease;
+  width: 100%;
+
+  &:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.1);
+  }
+`;
+
+const ActionsRow = styled.div`
+  margin-top: 24px;
+  display: grid;
+  gap: 10px;
+`;
+
+const ActionButton = styled.button`
+  border: 1px solid
+    ${({ $variant, theme }) =>
+      $variant === 'secondary' ? theme.colors.borderLight : theme.colors.primary};
+  border-radius: 999px;
+  background: ${({ $variant, theme }) =>
+    $variant === 'secondary' ? 'transparent' : theme.colors.primary};
+  color: ${({ $variant }) => ($variant === 'secondary' ? '#fff' : '#000')};
+  font-weight: bold;
+  padding: 12px 20px;
   cursor: pointer;
   transition: transform 0.2s ease, filter 0.2s ease;
   width: 100%;

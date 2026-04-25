@@ -44,13 +44,13 @@ async function login({ email, password }) {
       throw new AppError('Credenciais inválidas', 401);
     }
 
-    const lockUntil = user.lock_until ? new Date(user.lock_until) : null;
+    const lockUntil = user.bloqueado_ate ? new Date(user.bloqueado_ate) : null;
     if (lockUntil && lockUntil > new Date()) {
       throw new AppError('Muitas tentativas falhas. Tente novamente em 5 minutos.', 401);
     }
 
-    if (user.password !== password) {
-      const attempts = user.failed_login_attempts + 1;
+    if (user.senha !== password) {
+      const attempts = (user.tentativas_falha_login || 0) + 1;
       const shouldLock = attempts >= 3;
       const nextLock = shouldLock ? new Date(Date.now() + 5 * 60 * 1000) : null;
 
@@ -73,14 +73,14 @@ async function login({ email, password }) {
       expiresIn: 3600,
       user: {
         id: user.id,
-        name: user.name,
+        name: user.nome,
         email: user.email
       },
       account: {
         id: account.id,
-        number: account.account_number,
-        digit: account.account_digit,
-        balance: account.balance
+        number: account.numero_conta,
+        digit: account.digito_conta,
+        balance: account.saldo
       }
     };
   } finally {
@@ -89,7 +89,7 @@ async function login({ email, password }) {
 }
 
 async function register(payload) {
-  const { name, email, password, confirmPassword, cpf, createWithBalance, address = {} } = payload;
+  const { name, email, password, confirmPassword, cpf, createWithBalance } = payload;
 
   if (!name) {
     throw new AppError('Nome não pode ser vazio', 400);
@@ -137,12 +137,7 @@ async function register(payload) {
       name,
       email,
       password,
-      cpf,
-      street: address.street || 'Rua sem nome, 0',
-      neighborhood: address.neighborhood || 'Centro',
-      city: address.city || 'Oriximina',
-      state: address.state || 'PA',
-      zipCode: address.zipCode || '68270-000'
+      cpf
     });
 
     const { accountNumber, accountDigit } = buildAccountNumbers(userId);
@@ -155,7 +150,8 @@ async function register(payload) {
       entryType: 'Abertura de conta',
       amount: initialBalance,
       description: 'Conta criada no M3 Bank',
-      relatedAccount: null
+      relatedAccount: null,
+      favoredName: name
     });
 
     await connection.commit();

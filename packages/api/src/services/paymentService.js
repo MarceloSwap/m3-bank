@@ -5,6 +5,17 @@ const accountRepository = require('../repositories/accountRepository');
 const statementRepository = require('../repositories/statementRepository');
 const pixRepository = require('../repositories/pixRepository');
 
+function normalizeAccountRow(row) {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    ...row,
+    balance: Number(row.saldo)
+  };
+}
+
 async function simulatePixPayment(userId, payload) {
   const { amount, description } = payload;
   const parsedAmount = parseMoney(amount);
@@ -18,7 +29,9 @@ async function simulatePixPayment(userId, payload) {
   try {
     await connection.beginTransaction();
 
-    const account = await accountRepository.findByUserId(connection, userId);
+    const account = normalizeAccountRow(
+      await accountRepository.findByUserId(connection, userId)
+    );
 
     if (!account) {
       throw new AppError('Conta não encontrada', 404);
@@ -45,7 +58,8 @@ async function simulatePixPayment(userId, payload) {
       entryType: 'Pagamento Pix',
       amount: parsedAmount,
       description: description || 'Pagamento Pix simulado',
-      relatedAccount: 'QR ESTATICO'
+      relatedAccount: 'QR ESTATICO',
+      favoredName: null // Pix simulado, sem favorecido específico
     });
 
     await connection.commit();

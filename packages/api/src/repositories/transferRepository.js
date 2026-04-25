@@ -1,7 +1,7 @@
 async function create(connection, transfer) {
   const [result] = await connection.query(
-    `INSERT INTO transfers
-      (source_account_id, destination_account_id, amount, description, authorization_token_used)
+    `INSERT INTO transferencias
+      (conta_origem_id, conta_destino_id, valor, descricao, token_autorizacao_usado)
      VALUES (?, ?, ?, ?, ?)`,
     [
       transfer.sourceAccountId,
@@ -16,7 +16,7 @@ async function create(connection, transfer) {
 }
 
 async function clearAll(connection) {
-  await connection.query('DELETE FROM transfers');
+  await connection.query('DELETE FROM transferencias');
 }
 
 module.exports = {

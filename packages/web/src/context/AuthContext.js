@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import api, { setApiToken } from '../lib/api';
+import { useRouter } from 'next/router';
+import api, { setApiToken, setApiUnauthorizedHandler } from '../lib/api';
 
 const AuthContext = createContext(null);
 const STORAGE_KEY = 'm3-bank-auth';
@@ -7,6 +8,8 @@ const STORAGE_KEY = 'm3-bank-auth';
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const router = useRouter();
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -23,6 +26,13 @@ export function AuthProvider({ children }) {
 
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    setApiUnauthorizedHandler(() => {
+      logout();
+      router.replace('/');
+    });
+  }, [router]);
 
   async function login(credentials) {
     const { data } = await api.post('/auth/login', credentials);
@@ -52,6 +62,11 @@ export function AuthProvider({ children }) {
 
     const nextSession = {
       ...session,
+      user: {
+        ...session.user,
+        name: accountData?.owner?.name || session.user?.name,
+        email: accountData?.owner?.email || session.user?.email
+      },
       account: {
         ...session.account,
         id: accountData.id,

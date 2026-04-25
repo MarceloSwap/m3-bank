@@ -7,6 +7,18 @@ const accountRepository = require('../repositories/accountRepository');
 const statementRepository = require('../repositories/statementRepository');
 const transferRepository = require('../repositories/transferRepository');
 
+function normalizeAccountRow(row) {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    ...row,
+    active: Boolean(row.ativa),
+    balance: Number(row.saldo)
+  };
+}
+
 async function createTransfer(userId, payload) {
   const {
     accountNumber,
@@ -43,11 +55,15 @@ async function createTransfer(userId, payload) {
   try {
     await connection.beginTransaction();
 
-    const sourceAccount = await accountRepository.findByUserId(connection, userId);
-    const destinationAccount = await accountRepository.findByNumberAndDigit(
-      connection,
-      accountNumber,
-      accountDigit
+    const sourceAccount = normalizeAccountRow(
+      await accountRepository.findByUserId(connection, userId)
+    );
+    const destinationAccount = normalizeAccountRow(
+      await accountRepository.findByNumberAndDigit(
+        connection,
+        accountNumber,
+        accountDigit
+      )
     );
 
     if (!sourceAccount || !destinationAccount || !destinationAccount.active) {
@@ -87,7 +103,8 @@ async function createTransfer(userId, payload) {
       entryType: 'Transferência enviada',
       amount: parsedAmount,
       description,
-      relatedAccount: `${destinationAccount.account_number}-${destinationAccount.account_digit}`
+      relatedAccount: `${destinationAccount.numero_conta}-${destinationAccount.digito_conta}`,
+      favoredName: destinationAccount.nome
     });
 
     await statementRepository.createEntry(connection, {
@@ -96,7 +113,8 @@ async function createTransfer(userId, payload) {
       entryType: 'Transferência recebida',
       amount: parsedAmount,
       description,
-      relatedAccount: `${sourceAccount.account_number}-${sourceAccount.account_digit}`
+      relatedAccount: `${sourceAccount.numero_conta}-${sourceAccount.digito_conta}`,
+      favoredName: sourceAccount.nome
     });
 
     await connection.commit();

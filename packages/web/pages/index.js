@@ -61,6 +61,7 @@ export default function IndexPage() {
 
     if (!registerForm.name) nextErrors.name = 'Nome não pode ser vazio';
     if (!registerForm.email) nextErrors.email = 'Email não pode ser vazio';
+    if (!registerForm.cpf) nextErrors.cpf = 'CPF não pode ser vazio';
     if (!registerForm.password) nextErrors.password = 'Senha não pode ser vazio';
     if (!registerForm.confirmPassword) {
       nextErrors.confirmPassword = 'Confirmar senha não pode ser vazio';
@@ -89,16 +90,7 @@ export default function IndexPage() {
     }
 
     try {
-      const data = await register({
-        ...registerForm,
-        address: {
-          street: 'Rua da Liberdade, 100',
-          neighborhood: 'Centro',
-          city: 'Oriximina',
-          state: 'PA',
-          zipCode: '68270-000'
-        }
-      });
+      const data = await register(registerForm);
 
       setRegisterForm(emptyRegister);
       setMode('login');
@@ -118,10 +110,6 @@ export default function IndexPage() {
 
   return (
     <>
-      <Head>
-        <title>M3 Bank</title>
-      </Head>
-
       <Page>
         <HeroCard>
           <img src="/brand/m3-logo2.png" alt="M3 Bank" />
@@ -185,6 +173,7 @@ export default function IndexPage() {
                 label="CPF"
                 value={registerForm.cpf}
                 onChange={(event) => setRegisterForm({ ...registerForm, cpf: event.target.value })}
+                error={errors.cpf}
               />
               <Field
                 label="Senha"
@@ -325,9 +314,16 @@ const PrimaryButton = styled.button`
   border-radius: 16px;
   padding: 14px 18px;
   background: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.colors.ink};
+  color: ${({ theme }) => theme.colors.secondary};
   cursor: pointer;
   font-weight: 700;
+  transition: all 0.2s ease;
+
+  &:hover {
+    opacity: 0.95;
+    transform: translateY(-2px);
+    box-shadow: ${({ theme }) => theme.shadows.primary};
+  }
 `;
 
 const ToggleRow = styled.label`

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import Field from '../../src/components/Field';
 import Modal from '../../src/components/Modal';
@@ -18,6 +18,13 @@ export default function ProfilePage() {
   const [errors, setErrors] = useState({});
   const [modal, setModal] = useState(null);
   const [activeTab, setActiveTab] = useState('name');
+
+  useEffect(() => {
+    setForm((previous) => ({
+      ...previous,
+      name: session?.user?.name || ''
+    }));
+  }, [session?.user?.name]);
 
   async function handleUpdateName(event) {
     event.preventDefault();

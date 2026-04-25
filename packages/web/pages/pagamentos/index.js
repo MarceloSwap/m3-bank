@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useRouter } from 'next/router';
 import styled from 'styled-components';
 import Field from '../../src/components/Field';
 import Modal from '../../src/components/Modal';
@@ -10,6 +11,7 @@ import api from '../../src/lib/api';
 
 export default function PaymentsPage() {
   const { refreshAccount } = useAuth();
+  const router = useRouter();
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('Pix simulado de teste');
   const [modal, setModal] = useState(null);
@@ -24,7 +26,19 @@ export default function PaymentsPage() {
       setModal({
         type: 'success',
         title: 'Pagamento',
-        message: data.message
+        message: `${data.message}. Deseja fazer outro pagamento ou voltar para a Home?`,
+        actions: [
+          {
+            label: 'Fazer outro pagamento',
+            onClick: () => setModal(null),
+            variant: 'primary'
+          },
+          {
+            label: 'Voltar para Home',
+            onClick: () => router.push('/home'),
+            variant: 'secondary'
+          }
+        ]
       });
       setAmount('');
     } catch (error) {
@@ -71,6 +85,7 @@ export default function PaymentsPage() {
             type={modal.type}
             title={modal.title}
             message={modal.message}
+            actions={modal.actions}
             onClose={() => setModal(null)}
           />
         ) : null}

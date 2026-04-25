@@ -3,16 +3,39 @@ const AppError = require('../utils/AppError');
 const accountRepository = require('../repositories/accountRepository');
 const statementRepository = require('../repositories/statementRepository');
 
-function formatStatementRow(row) {
-  return {
+function formatStatementRow(row, account) {
+  let receiverName = null;
+  let receiverAccount = null;
+
+  if (row.tipo_lancamento === 'Abertura de conta') {
+    receiverName = account.nome;
+    receiverAccount = `${account.numero_conta}-${account.digito_conta}`;
+  } else if (row.tipo_lancamento === 'Transferência enviada') {
+    receiverName = row.nome_favorecido;
+    receiverAccount = row.conta_relacionada;
+  } else if (row.tipo_lancamento === 'Transferência recebida') {
+    // Para recebida, o receiver é o remetente
+    receiverName = row.nome_favorecido;
+    receiverAccount = row.conta_relacionada;
+  } else if (row.tipo_lancamento === 'Depósito') {
+    receiverName = account.nome;
+    receiverAccount = `${account.numero_conta}-${account.digito_conta}`;
+  }
+
+  const result = {
     id: row.id,
-    date: row.created_at,
-    type: row.entry_type,
-    description: row.description || '-',
-    amount: row.amount,
-    direction: row.direction,
-    relatedAccount: row.related_account || null
+    date: row.criado_em.toISOString(),
+    type: row.tipo_lancamento,
+    description: row.descricao || '-',
+    amount: row.valor,
+    direction: row.direcao,
+    relatedAccount: row.conta_relacionada || null,
+    favoredName: row.nome_favorecido || null,
+    receiverName,
+    receiverAccount
   };
+
+  return result;
 }
 
 async function getAuthenticatedAccount(userId) {
@@ -27,21 +50,14 @@ async function getAuthenticatedAccount(userId) {
 
     return {
       id: account.id,
-      number: account.account_number,
-      digit: account.account_digit,
-      balance: account.balance,
-      active: Boolean(account.active),
+      number: account.numero_conta,
+      digit: account.digito_conta,
+      balance: account.saldo,
+      active: Boolean(account.ativa),
       owner: {
-        name: account.name,
+        name: account.nome,
         email: account.email,
-        cpf: account.cpf,
-        address: {
-          street: account.street,
-          neighborhood: account.neighborhood,
-          city: account.city,
-          state: account.state,
-          zipCode: account.zip_code
-        }
+        cpf: account.cpf
       }
     };
   } finally {
@@ -56,11 +72,11 @@ async function listAccounts() {
     const accounts = await accountRepository.findAllActive(connection);
     return accounts.map((account) => ({
       id: account.id,
-      number: account.account_number,
-      digit: account.account_digit,
-      balance: account.balance,
-      active: Boolean(account.active),
-      ownerName: account.name,
+      number: account.numero_conta,
+      digit: account.digito_conta,
+      balance: account.saldo,
+      active: Boolean(account.ativa),
+      ownerName: account.nome,
       ownerEmail: account.email
     }));
   } finally {
@@ -93,8 +109,8 @@ async function getStatement(userId, page = 1, limit = 10, periodDays = 30) {
       limit: parsedLimit,
       total,
       periodDays: parsedDays,
-      balance: account.balance,
-      entries: entries.map(formatStatementRow)
+      balance: account.saldo,
+      entries: entries.map(row => formatStatementRow(row, account))
     };
   } finally {
     connection.release();

@@ -21,15 +21,21 @@ export default function StatementPage() {
   }, [periodDays]);
 
   async function loadStatement(page, days) {
-    const { data } = await api.get('/accounts/statement', {
-      params: {
-        page,
-        limit: 10,
-        periodDays: days
-      }
-    });
+    const [{ data }, { data: accountData }] = await Promise.all([
+      api.get('/accounts/statement', {
+        params: {
+          page,
+          limit: 10,
+          periodDays: days
+        }
+      }),
+      api.get('/accounts/me')
+    ]);
 
-    setStatement(data);
+    setStatement({
+      ...data,
+      balance: accountData?.balance ?? data.balance ?? 0
+    });
   }
 
   const totalPages = Math.max(1, Math.ceil((statement.total || 0) / statement.limit));
@@ -72,6 +78,12 @@ export default function StatementPage() {
                   <TypeTitle>{entry.type}</TypeTitle>
                   <Meta>{new Date(entry.date).toLocaleString('pt-BR')}</Meta>
                   <Description>{entry.description || '-'}</Description>
+                  {entry.favoredName && (
+                    <Meta>Favorecido: {entry.favoredName}</Meta>
+                  )}
+                  {entry.relatedAccount && entry.relatedAccount !== 'QR ESTATICO' && (
+                    <Meta>Conta do favorecido: {entry.relatedAccount}</Meta>
+                  )}
                 </div>
                 <Value $direction={entry.direction}>
                   {entry.direction === 'debit' ? '(-) ' : ''}

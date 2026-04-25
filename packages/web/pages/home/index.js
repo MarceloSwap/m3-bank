@@ -6,11 +6,11 @@ import Shell from '../../src/components/Shell';
 import { useAuth } from '../../src/context/AuthContext';
 
 const shortcuts = [
-  { href: '/transferencia', label: 'Transferências', image: '/icons/transfer.svg' },
-  { href: '/pagamentos', label: 'Pagamentos', image: '/icons/payments.svg' },
-  { href: '/deposito', label: 'Depósito', image: '/icons/deposit.svg' },
-  { href: '/extrato', label: 'Extrato', image: '/icons/statement.svg' },
-  { href: '/perfil', label: 'Perfil', image: '/icons/profile.svg' }
+  { href: '/transferencia', label: 'Transferências', image: '/icons/shortcut-transfer.svg', accent: '#5cc8ff' },
+  { href: '/pagamentos', label: 'Pagamentos', image: '/icons/shortcut-payments.svg', accent: '#7df9a6' },
+  { href: '/deposito', label: 'Depósito', image: '/icons/shortcut-deposit.svg', accent: '#ffd166' },
+  { href: '/extrato', label: 'Extrato', image: '/icons/shortcut-statement.svg', accent: '#c6a0ff' },
+  { href: '/perfil', label: 'Perfil', image: '/icons/shortcut-profile.svg', accent: '#ff9ecb' }
 ];
 
 export default function HomePage() {
@@ -29,8 +29,8 @@ export default function HomePage() {
   return (
     <ProtectedPage>
       <Shell
-        title={`Olá ${session?.user?.name || ''}, bem-vindo ao M3 Bank`}
-        subtitle="Uma interface mais clara para validar saldo, navegar entre módulos e exercitar seus cenários de automação com mais cara de produto real."
+        title={`Olá ${session?.user?.name || ''}, bem-vindo!`}
+        subtitle="Para exercitar seus cenários de automação com mais cara de produto real."
       >
         <BalanceCard>
           <small>Saldo disponível atualizado</small>
@@ -46,8 +46,10 @@ export default function HomePage() {
           {shortcuts.map((item) => (
             <Link href={item.href} key={item.href}>
               <ShortcutCard>
-                <img src={item.image} alt={item.label} />
-                <span>{item.label}</span>
+                <IconBadge aria-hidden="true" style={{ '--accent': item.accent }}>
+                  <IconImage src={item.image} alt="" />
+                </IconBadge>
+                <ShortcutLabel>{item.label}</ShortcutLabel>
               </ShortcutCard>
             </Link>
           ))}
@@ -62,7 +64,12 @@ export default function HomePage() {
               <Row key={entry.id}>
                 <div>
                   <TypeTitle>{entry.type}</TypeTitle>
-                  <p>{entry.description || '-'}</p>
+                  <p>
+                    {entry.description || '-'}
+                    {entry.relatedAccount && entry.relatedAccount !== 'QR ESTATICO'
+                      ? ` • Conta: ${entry.relatedAccount}`
+                      : ''}
+                  </p>
                 </div>
                 <Amount $direction={entry.direction}>
                   {entry.direction === 'debit' ? '(-) ' : ''}
@@ -162,26 +169,39 @@ const ShortcutCard = styled.a`
     transform: translateY(-2px) scale(0.98);
   }
 
-  img {
-    width: 64px;
-    height: 64px;
-    object-fit: contain;
-    transition: transform 0.3s ease;
-  }
+`;
 
-  &:hover img {
-    transform: scale(1.1);
-  }
+const IconBadge = styled.span`
+  width: 84px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--accent, #f0d064) 26%, transparent), rgba(255, 255, 255, 0.04));
+  border: 1px solid color-mix(in srgb, var(--accent, #f0d064) 60%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--accent, #f0d064) 35%, transparent);
+  transition: transform 0.3s ease;
 
-  span {
-    font-weight: 700;
-    font-size: 0.95rem;
-    color: ${({ theme }) => theme.colors.ink};
-    transition: color 0.3s ease;
-    text-align: center;
+  ${ShortcutCard}:hover & {
+    transform: scale(1.08);
   }
+`;
 
-  &:hover span {
+const IconImage = styled.img`
+  width: 60px;
+  height: 60px;
+  display: block;
+  filter: drop-shadow(0 0 6px rgba(240, 208, 100, 0.2));
+`;
+
+const ShortcutLabel = styled.span`
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: ${({ theme }) => theme.colors.ink};
+  transition: color 0.3s ease;
+  text-align: center;
+
+  ${ShortcutCard}:hover & {
     color: ${({ theme }) => theme.colors.primary};
   }
 `;

@@ -5,6 +5,18 @@ const accountRepository = require('../repositories/accountRepository');
 const statementRepository = require('../repositories/statementRepository');
 const depositRepository = require('../repositories/depositRepository');
 
+function normalizeAccountRow(row) {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    ...row,
+    active: Boolean(row.ativa),
+    balance: Number(row.saldo)
+  };
+}
+
 async function createDeposit(userId, payload) {
   const {
     accountNumber,
@@ -22,8 +34,8 @@ async function createDeposit(userId, payload) {
   }
 
   const parsedAmount = parseMoney(amount);
-  if (!parsedAmount || parsedAmount < 1) {
-    throw new AppError('Valor mínimo para depósito é de R$ 1,00', 400);
+  if (!parsedAmount || parsedAmount < 10) {
+    throw new AppError('Valor mínimo para depósito é de R$ 10,00', 400);
   }
 
   if (parsedAmount > 10000) {
@@ -35,10 +47,12 @@ async function createDeposit(userId, payload) {
   try {
     await connection.beginTransaction();
 
-    const destinationAccount = await accountRepository.findByNumberAndDigit(
-      connection,
-      accountNumber,
-      accountDigit
+    const destinationAccount = normalizeAccountRow(
+      await accountRepository.findByNumberAndDigit(
+        connection,
+        accountNumber,
+        accountDigit
+      )
     );
 
     if (!destinationAccount || !destinationAccount.active) {
@@ -60,7 +74,8 @@ async function createDeposit(userId, payload) {
       direction: 'credit',
       entryType: 'Depósito',
       amount: parsedAmount,
-      description
+      description,
+      favoredName: destinationAccount.nome
     });
 
     await connection.commit();
