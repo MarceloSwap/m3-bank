@@ -1,0 +1,271 @@
+/**
+ * Template: Teste de API com Supertest
+ * 
+ * Arquivo: supertest/RN01-login.spec.js
+ * Regra de Negócio: RN01 - Login
+ */
+
+const request = require('supertest');
+const { expect } = require('chai');
+const config = require('../config/baseConfig');
+
+describe('RN01 - Login (API)', () => {
+  // Dados de teste
+  const testUser = {
+    name: `${config.QA_PREFIX}usuario_login_001`,
+    email: `${config.QA_PREFIX}usuario_login_001${config.TEST_DOMAIN}`,
+    password: 'Senha@123456'
+  };
+
+  // Hooks
+  before(async function () {
+    this.timeout(10000);
+    
+    // Preparar: Criar usuário de teste se não existir
+    // Em um cenário real, você pode:
+    // 1. Chamar POST /auth/register
+    // 2. Ou usar uma factory function que acessa o banco diretamente
+    
+    try {
+      const registerResponse = await request(config.API_BASE_URL)
+        .post('/auth/register')
+        .send({
+          ...testUser,
+          confirmPassword: testUser.password,
+          createAccountWithBalance: true
+        });
+      
+      console.log(`✅ Usuário de teste criado: ${testUser.email}`);
+    } catch (error) {
+      console.log(`⚠️  Usuário pode já existir: ${testUser.email}`);
+    }
+  });
+
+  describe('POST /auth/login', () => {
+    it('Deve fazer login com credenciais válidas', async function () {
+      this.timeout(config.MEDIUM_TIMEOUT);
+
+      // Act
+      const response = await request(config.API_BASE_URL)
+        .post('/auth/login')
+        .send({
+          email: testUser.email,
+          password: testUser.password
+        });
+
+      // Assert
+      expect(response.status).to.equal(200);
+      expect(response.body).to.have.property('token');
+      expect(response.body).to.have.property('user');
+      expect(response.body).to.have.property('account');
+
+      // Validar token JWT
+      const token = response.body.token;
+      expect(token).to.be.a('string');
+      expect(token.split('.')).to.have.length(3); // header.payload.signature
+
+      // Validar dados do usuário
+      expect(response.body.user).to.have.property('id');
+      expect(response.body.user).to.have.property('email');
+      expect(response.body.user.email).to.equal(testUser.email);
+
+      // Validar dados da conta
+      expect(response.body.account).to.have.property('id');
+      expect(response.body.account).to.have.property('balance');
+      expect(response.body.account.balance).to.be.a('number');
+
+      // Salvar token para próximos testes
+      this.token = token;
+    });
+
+    it('Deve retornar erro com credenciais inválidas', async function () {
+      this.timeout(config.MEDIUM_TIMEOUT);
+
+      // Act
+      const response = await request(config.API_BASE_URL)
+        .post('/auth/login')
+        .send({
+          email: testUser.email,
+          password: 'SenhaErrada123'
+        });
+
+      // Assert
+      expect(response.status).to.equal(401);
+      expect(response.body).to.have.property('message');
+      expect(response.body.message).to.include('Credenciais inválidas');
+    });
+
+    it('Deve retornar erro com email não registrado', async function () {
+      this.timeout(config.MEDIUM_TIMEOUT);
+
+      // Act
+      const response = await request(config.API_BASE_URL)
+        .post('/auth/login')
+        .send({
+          email: `${config.QA_PREFIX}naoexiste${config.TEST_DOMAIN}`,
+          password: testUser.password
+        });
+
+      // Assert
+      expect(response.status).to.equal(401);
+      expect(response.body.message).to.include('Credenciais inválidas');
+    });
+
+    it('Deve retornar erro com email vazio', async function () {
+      this.timeout(config.MEDIUM_TIMEOUT);
+
+      // Act
+      const response = await request(config.API_BASE_URL)
+        .post('/auth/login')
+        .send({
+          email: '',
+          password: testUser.password
+        });
+
+      // Assert
+      expect(response.status).to.equal(400);
+      expect(response.body.message).to.include('preenchidos');
+    });
+
+    it('Deve retornar erro com senha vazia', async function () {
+      this.timeout(config.MEDIUM_TIMEOUT);
+
+      // Act
+      const response = await request(config.API_BASE_URL)
+        .post('/auth/login')
+        .send({
+          email: testUser.email,
+          password: ''
+        });
+
+      // Assert
+      expect(response.status).to.equal(400);
+      expect(response.body.message).to.include('preenchidos');
+    });
+
+    it('Deve bloquear após 3 tentativas falhas', async function () {
+      this.timeout(config.LONG_TIMEOUT);
+
+      // Act: Fazer 3 tentativas com senha errada
+      for (let i = 0; i < 3; i++) {
+        await request(config.API_BASE_URL)
+          .post('/auth/login')
+          .send({
+            email: `${config.QA_PREFIX}teste_bloqueio${config.TEST_DOMAIN}`,
+            password: 'SenhaErrada'
+          });
+      }
+
+      // 4ª tentativa deve ser bloqueada
+      const response = await request(config.API_BASE_URL)
+        .post('/auth/login')
+        .send({
+          email: `${config.QA_PREFIX}teste_bloqueio${config.TEST_DOMAIN}`,
+          password: 'SenhaErrada'
+        });
+
+      // Assert
+      expect(response.status).to.equal(401);
+      expect(response.body.message).to.include('Muitas tentativas falhas');
+    });
+  });
+
+  describe('GET /api/accounts/me (com token válido)', () => {
+    let validToken;
+
+    before(async function () {
+      this.timeout(config.MEDIUM_TIMEOUT);
+      
+      // Fazer login para obter token válido
+      const response = await request(config.API_BASE_URL)
+        .post('/auth/login')
+        .send({
+          email: testUser.email,
+          password: testUser.password
+        });
+
+      validToken = response.body.token;
+    });
+
+    it('Deve retornar dados da conta com token válido', async function () {
+      this.timeout(config.MEDIUM_TIMEOUT);
+
+      // Act
+      const response = await request(config.API_BASE_URL)
+        .get('/accounts/me')
+        .set('Authorization', `Bearer ${validToken}`);
+
+      // Assert
+      expect(response.status).to.equal(200);
+      expect(response.body).to.have.property('id');
+      expect(response.body).to.have.property('balance');
+      expect(response.body).to.have.property('number');
+      expect(response.body).to.have.property('digit');
+    });
+
+    it('Deve retornar 401 sem token', async function () {
+      this.timeout(config.MEDIUM_TIMEOUT);
+
+      // Act
+      const response = await request(config.API_BASE_URL)
+        .get('/accounts/me');
+
+      // Assert
+      expect(response.status).to.equal(401);
+      expect(response.body.message).to.include('Token inválido ou expirado');
+    });
+
+    it('Deve retornar 401 com token inválido', async function () {
+      this.timeout(config.MEDIUM_TIMEOUT);
+
+      // Act
+      const response = await request(config.API_BASE_URL)
+        .get('/accounts/me')
+        .set('Authorization', 'Bearer token_inválido_xyz');
+
+      // Assert
+      expect(response.status).to.equal(401);
+      expect(response.body.message).to.include('Token inválido ou expirado');
+    });
+  });
+
+  // Cleanup
+  after(async function () {
+    // Opcional: deletar usuário de teste após testes
+    // Ou deixar para cleanup-tests.js fazer a limpeza
+    console.log(`🧹 Testes de login concluídos. Dados de teste serão removidos por cleanup-qa`);
+  });
+});
+
+/**
+ * Dicas de Escrita:
+ * 
+ * 1. Sempre use chai expect para assertions
+ *    ✅ expect(status).to.equal(200)
+ *    ❌ if (status !== 200) throw new Error()
+ * 
+ * 2. Use propriedades descritivas em assertions
+ *    ✅ expect(response.body).to.have.property('token')
+ *    ❌ expect(response.body.token).to.exist
+ * 
+ * 3. Sempre defina timeout para testes assincrónus
+ *    ✅ this.timeout(10000)
+ *    ❌ sem timeout
+ * 
+ * 4. Use prefixo qa_ em dados de teste
+ *    ✅ email: `${config.QA_PREFIX}usuario${config.TEST_DOMAIN}`
+ *    ❌ email: 'usuario@example.com'
+ * 
+ * 5. Reutilize dados com before/after hooks
+ *    ✅ before() { criar dados }
+ *    ✅ after() { limpar dados }
+ *    ❌ criar dados em cada teste
+ * 
+ * 6. Use config global para URLs e constantes
+ *    ✅ const baseUrl = config.API_BASE_URL
+ *    ❌ const baseUrl = 'http://localhost:3333/api'
+ * 
+ * 7. Valide tanto status quanto estrutura da resposta
+ *    ✅ expect(status).to.equal(200) + expect(body).to.have.property(...)
+ *    ❌ apenas expect(status)
+ */
