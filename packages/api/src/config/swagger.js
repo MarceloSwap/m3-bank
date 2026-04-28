@@ -25,31 +25,37 @@ module.exports = {
       ErrorResponse: {
         type: 'object',
         properties: {
-          message: { type: 'string' }
+          message: { type: 'string', example: 'Mensagem de erro amigável' }
         }
       },
-      User: {
+      AccountData: {
         type: 'object',
         properties: {
-          id: { type: 'integer' },
-          name: { type: 'string' },
-          email: { type: 'string' },
-          cpf: { type: 'string' },
-          accountNumber: { type: 'string' },
-          accountDigit: { type: 'string' },
-          balance: { type: 'number' }
+          id: { type: 'integer', example: 43 },
+          number: { type: 'string', example: '100043' },
+          digit: { type: 'string', example: '1' },
+          balance: { type: 'number', example: 150.50 },
+          active: { type: 'boolean', example: true },
+          owner: {
+            type: 'object',
+            properties: {
+              name: { type: 'string', example: 'Marcelo Ferreira' },
+              email: { type: 'string', example: 'marcelo@m3bank.com' },
+              cpf: { type: 'string', example: '11199922288' }
+            }
+          }
         }
       },
       StatementEntry: {
         type: 'object',
         properties: {
-          id: { type: 'integer' },
+          id: { type: 'integer', example: 105 },
           date: { type: 'string', format: 'date-time' },
           type: { type: 'string', enum: ['Abertura de conta', 'Transferência enviada', 'Transferência recebida', 'Depósito', 'Pagamento Pix'] },
-          amount: { type: 'number' },
-          description: { type: 'string' },
-          favoredName: { type: 'string' },
-          favoredAccount: { type: 'string' }
+          amount: { type: 'number', example: 50.00 },
+          description: { type: 'string', example: 'Pagamento da pizza' },
+          favoredName: { type: 'string', example: 'Carlos Silva' },
+          favoredAccount: { type: 'string', example: '100012-5' }
         }
       }
     }
@@ -57,8 +63,9 @@ module.exports = {
   paths: {
     '/auth/login': {
       post: {
+        tags: ['Autenticação'],
         summary: 'Realiza o login do usuário',
-        description: 'Campos obrigatórios: email e senha. Após 3 tentativas falhas, bloqueio por 5 minutos.',
+        description: 'Campos obrigatórios: email e senha.',
         requestBody: {
           required: true,
           content: {
@@ -75,17 +82,15 @@ module.exports = {
           }
         },
         responses: {
-          200: { description: 'Login realizado com sucesso, redireciona para Home' },
-          400: { description: 'Campos obrigatórios ausentes: "Usuário e senha precisam ser preenchidos"' },
-          401: { description: 'Credenciais inválidas ou bloqueio: "Muitas tentativas falhas. Tente novamente em 5 minutos." ou token expirado (1 hora)' },
-          500: { description: 'Erro interno do servidor' }
+          200: { description: 'Login realizado com sucesso' },
+          401: { description: 'Credenciais inválidas' }
         }
       }
     },
     '/auth/register': {
       post: {
+        tags: ['Autenticação'],
         summary: 'Cadastra um novo correntista',
-        description: 'Campos obrigatórios: nome, email, senha, confirmação de senha, cpf. Senha mínimo 6 caracteres. Saldo inicial opcional (R$ 1000 se marcado).',
         requestBody: {
           required: true,
           content: {
@@ -95,8 +100,8 @@ module.exports = {
                 required: ['name', 'email', 'password', 'confirmPassword', 'cpf', 'createWithBalance'],
                 properties: {
                   name: { type: 'string' },
-                  email: { type: 'string', format: 'email' },
-                  password: { type: 'string', minLength: 6 },
+                  email: { type: 'string' },
+                  password: { type: 'string' },
                   confirmPassword: { type: 'string' },
                   cpf: { type: 'string' },
                   createWithBalance: { type: 'boolean' }
@@ -106,33 +111,15 @@ module.exports = {
           }
         },
         responses: {
-          201: { description: 'Conta criada com sucesso, exibe número da conta' },
-          400: { description: 'Validações: nome vazio, email inválido, senha fraca, senhas não coincidem' },
-          500: { description: 'Erro interno do servidor' }
+          201: { description: 'Conta criada com sucesso' }
         }
       }
     },
-    '/accounts/me': {
-      get: {
-        summary: 'Retorna os dados da conta autenticada',
-        security: [{ bearerAuth: [] }],
-        responses: {
-          200: {
-            description: 'Conta encontrada',
-            content: {
-              'application/json': {
-                schema: { $ref: '#/components/schemas/User' }
-              }
-            }
-          },
-          401: { description: 'Token inválido ou expirado' },
-          404: { description: 'Conta não encontrada' },
-          500: { description: 'Erro interno do servidor' }
-        }
-      },
+    '/auth/profile': {
       put: {
+        tags: ['Autenticação'],
         summary: 'Atualiza o perfil do usuário (nome ou senha)',
-        description: 'Para alterar senha, informar senha atual. Nome mínimo 2 caracteres.',
+        description: 'Rota real implementada no authRoutes.js do backend.',
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
@@ -152,61 +139,57 @@ module.exports = {
         },
         responses: {
           200: { description: 'Perfil atualizado com sucesso' },
-          400: { description: 'Validações falharam' },
-          401: { description: 'Token inválido ou senha atual incorreta' },
-          500: { description: 'Erro interno do servidor' }
+          401: { description: 'Senha atual incorreta ou token inválido' },
+          404: { description: 'Usuário não encontrado' }
+        }
+      }
+    },
+    '/accounts/me': {
+      get: {
+        tags: ['Contas e Perfil'],
+        summary: 'Retorna os dados da conta autenticada',
+        security: [{ bearerAuth: [] }],
+        responses: {
+          200: {
+            description: 'Conta encontrada',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/AccountData' }
+              }
+            }
+          }
         }
       }
     },
     '/accounts': {
       get: {
-        summary: 'Lista as contas ativas disponíveis para transferência',
+        tags: ['Contas e Perfil'],
+        summary: 'Lista as contas ativas',
         security: [{ bearerAuth: [] }],
         responses: {
-          200: { description: 'Lista retornada com sucesso, excluindo conta própria' },
-          401: { description: 'Token inválido ou expirado' },
-          500: { description: 'Erro interno do servidor' }
+          200: { description: 'Lista retornada com sucesso' }
         }
       }
     },
     '/accounts/statement': {
       get: {
-        summary: 'Retorna o extrato paginado da conta autenticada',
-        description: 'Filtros por período: 7, 15, 30 dias. Cada registro inclui data/hora, tipo, valor, descrição, favorecido e conta.',
+        tags: ['Contas e Perfil'],
+        summary: 'Retorna o extrato paginado',
         security: [{ bearerAuth: [] }],
         parameters: [
           { name: 'page', in: 'query', schema: { type: 'integer', default: 1 } },
           { name: 'limit', in: 'query', schema: { type: 'integer', default: 10 } },
-          { name: 'periodDays', in: 'query', schema: { type: 'integer', enum: [7, 15, 30], default: 30 } }
+          { name: 'periodDays', in: 'query', schema: { type: 'integer', default: 30 } }
         ],
         responses: {
-          200: {
-            description: 'Extrato retornado com sucesso',
-            content: {
-              'application/json': {
-                schema: {
-                  type: 'object',
-                  properties: {
-                    balance: { type: 'number' },
-                    entries: {
-                      type: 'array',
-                      items: { $ref: '#/components/schemas/StatementEntry' }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          401: { description: 'Token inválido ou expirado' },
-          404: { description: 'Conta não encontrada' },
-          500: { description: 'Erro interno do servidor' }
+          200: { description: 'Extrato retornado com sucesso' }
         }
       }
     },
     '/transfers': {
       post: {
-        summary: 'Realiza uma transferência entre contas',
-        description: 'Valor mínimo R$ 10. Limite diurno R$ 10.000, noturno R$ 1.000. Token 123456 para > R$ 5.000. Não para própria conta.',
+        tags: ['Transações'],
+        summary: 'Realiza uma transferência',
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
@@ -218,39 +201,7 @@ module.exports = {
                 properties: {
                   accountNumber: { type: 'string' },
                   accountDigit: { type: 'string' },
-                  amount: { type: 'number', minimum: 10 },
-                  description: { type: 'string' },
-                  authorizationToken: { type: 'string', example: '123456' }
-                }
-              }
-            }
-          }
-        },
-        responses: {
-          201: { description: 'Transferência realizada com sucesso' },
-          400: { description: 'Validações: conta inválida, saldo insuficiente, limite excedido, autotransferência' },
-          401: { description: 'Token JWT inválido/expirado ou token especial ausente' },
-          404: { description: 'Conta de destino não encontrada ou inativa' },
-          500: { description: 'Erro interno do servidor' }
-        }
-      }
-    },
-    '/deposits': {
-      post: {
-        summary: 'Realiza um depósito em uma conta',
-        description: 'Valor entre R$ 1 e R$ 10.000. Crédito imediato.',
-        security: [{ bearerAuth: [] }],
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: {
-                type: 'object',
-                required: ['accountNumber', 'accountDigit', 'amount', 'description'],
-                properties: {
-                  accountNumber: { type: 'string' },
-                  accountDigit: { type: 'string' },
-                  amount: { type: 'number', minimum: 1, maximum: 10000 },
+                  amount: { type: 'number' },
                   description: { type: 'string' }
                 }
               }
@@ -258,17 +209,41 @@ module.exports = {
           }
         },
         responses: {
-          201: { description: 'Depósito realizado com sucesso' },
-          400: { description: 'Validações: conta inválida, valor fora do limite' },
-          401: { description: 'Token inválido ou expirado' },
-          404: { description: 'Conta não encontrada ou inativa' },
-          500: { description: 'Erro interno do servidor' }
+          201: { description: 'Transferência realizada' }
+        }
+      }
+    },
+    '/deposits': {
+      post: {
+        tags: ['Transações'],
+        summary: 'Realiza um depósito',
+        security: [{ bearerAuth: [] }],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['accountNumber', 'accountDigit', 'amount', 'description'],
+                properties: {
+                  accountNumber: { type: 'string' },
+                  accountDigit: { type: 'string' },
+                  amount: { type: 'number' },
+                  description: { type: 'string' }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          201: { description: 'Depósito realizado' }
         }
       }
     },
     '/payments/pix/simulate': {
       post: {
-        summary: 'Simula um pagamento Pix por QR Code estático',
+        tags: ['Pix'],
+        summary: 'Simula um pagamento Pix',
         security: [{ bearerAuth: [] }],
         requestBody: {
           required: true,
@@ -278,7 +253,7 @@ module.exports = {
                 type: 'object',
                 required: ['amount'],
                 properties: {
-                  amount: { type: 'number', minimum: 0.01 },
+                  amount: { type: 'number' },
                   description: { type: 'string' }
                 }
               }
@@ -286,11 +261,7 @@ module.exports = {
           }
         },
         responses: {
-          201: { description: 'Pagamento Pix simulado realizado com sucesso' },
-          400: { description: 'Valor inválido ou saldo insuficiente' },
-          401: { description: 'Token inválido ou expirado' },
-          404: { description: 'Conta não encontrada' },
-          500: { description: 'Erro interno do servidor' }
+          201: { description: 'Pix realizado' }
         }
       }
     }
