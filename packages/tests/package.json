@@ -4,11 +4,11 @@
   "description": "Test automation suite for M3 Bank - Cypress E2E and Supertest API with SBTM support",
   "private": true,
   "scripts": {
-    "test:api": "mocha supertest/**/*.spec.js --require config/baseConfig.js --reporter mochawesome --reporter-options reportDir=reports/api,reportFilename=api-report.html",
-    "test:e2e": "cypress run --config-file cypress.config.js",
-    "test:e2e:open": "cypress open --config-file cypress.config.js",
+    "test:api": "mocha api/tests/**/*.spec.js --require api/config/baseConfig.js --reporter mochawesome --reporter-options reportDir=reports/api,reportFilename=api-report.html && start reports/api/api-report.html",
+    "test:e2e": "cypress run --project ui",
+    "test:e2e:open": "cypress open --project ui",
     "test:all": "npm run test:api && npm run test:e2e",
-    "cleanup-qa": "node scripts/cleanup-tests.js",
+    "cleanup-qa": "node api/scripts/cleanup-tests.js",
     "seed-db": "npm --workspace packages/api run seed"
   },
   "keywords": [

@@ -1,0 +1,8 @@
+{
+  "name": "qa_api_cadastro_001",
+  "email": "qa_api_cadastro_001@test.com",
+  "password": "Senha@123456",
+  "confirmPassword": "Senha@123456",
+  "cpf": "99988877766",
+  "createWithBalance": true
+}
