@@ -1,5 +1,111 @@
 /**
  * Test Charter: Riscos de UI (Valor Limite e Concorrência)
+ * * Sessão SBTM focada em validações de UI e comportamentos em ações concorrentes
+ * Foco: RN01 (Cadastro) e RN03 (Transferências)
+ * Duração: 90 minutos
+ * Testador: Marcelo Ferreira (QA Engineer Sênior)
+ */
+
+# 🎨 Charter: Riscos de UI - Valor Limite e Concorrência
+
+## 📋 Objetivo
+
+Investigar problemas de UI em cenários de valores limite e ações concorrentes, garantindo que o Front-end lida corretamente com as validações antes de enviar as requisições para a API:
+- Comportamento em boundary values (mínimo, máximo, +1, -1) nos formulários.
+- Interações quando o usuário clica repetidamente (prevenção de duplo envio).
+- Estado visual durante o processamento (Loading/Spinners).
+- Rastreabilidade alinhada com a Wiki atualizada (RN01 e RN03).
+
+---
+
+## 🎯 Áreas de Foco
+
+### 1️⃣ CADASTRO DE CONTAS (RN01) - LIMITES E CONCORRÊNCIA
+
+#### Teste: Limite de Senha (Exatamente 5 e 6 caracteres)
+- **O Que:** Preencher o formulário de cadastro com senha de 5 caracteres e, depois, de 6 caracteres.
+- **Esperado:** - 5 chars: Erro visual indicando que o mínimo são 6 caracteres (Conforme RN01.07).
+  - 6 chars: Aceita normalmente.
+- **Risco:** O Front-end não validar o tamanho mínimo e deixar a API estourar o erro.
+- **Evidência:** Print da validação visual.
+
+#### Teste: Double-Click no Botão "Cadastrar"
+- **O Que:** Preencher formulário de cadastro válido e clicar em "Cadastrar" 3x rapidamente.
+- **Esperado:** - Botão deve ser desabilitado no primeiro clique.
+  - Apenas UMA conta deve ser criada no banco de dados.
+- **Risco:** Race condition gerando erro 400 (E-mail já cadastrado) por tentar enviar o mesmo payload múltiplas vezes.
+- **Evidência:** Console Network mostrando apenas um `POST /auth/register`.
+
+#### Teste: Toggle de Saldo Inicial (Spam Click)
+- **O Que:** Clicar rapidamente 20x no toggle "Criar conta com saldo" antes de submeter.
+- **Esperado:** O estado do toggle deve refletir corretamente o valor booleano final enviado no JSON.
+- **Risco:** Estado da UI dessincronizar com o estado do React/Context.
+
+---
+
+### 2️⃣ TRANSFERÊNCIAS (RN03) - BOUNDARY VALUE TESTING
+
+#### Teste: Transferência R$ 9,99 (abaixo mínimo)
+- **O Que:** Preencher valor 9.99 e clicar "Transferir".
+- **Esperado:** Campo fica vermelho; Mensagem: "O valor mínimo é de R$ 10,00".
+- **Risco:** Aceita valor inválido, delegando a validação apenas para a API.
+
+#### Teste: Transferência R$ 10,00 (mínimo válido)
+- **O Que:** Preencher valor exato de 10.00.
+- **Esperado:** Passa sem erros visuais.
+
+#### Teste: Limites Diurnos (06h - 19h59)
+- **O Que:** Testar valores `9999.99`, `10000.00` (limite válido) e `10000.01` (inválido).
+- **Esperado:** Exibição clara de erro ao tentar `10000.01`: "Valor excede o limite permitido para este horário".
+
+#### Teste: Limites Noturnos (20h - 05h59)
+- **O Que:** Testar valores `1000.00` (válido) e `1000.01` (inválido).
+- **Esperado:** Rejeita com "Valor excede o limite noturno permitido" no valor de `.01`.
+
+---
+
+### 3️⃣ LISTA DE CONTAS DISPONÍVEIS (POPOVER UI)
+
+#### Teste: Busca Rápida e Seleção (Concorrência UI)
+- **O Que:** Digitar busca "qa_" e imediatamente clicar em um resultado antes da animação terminar.
+- **Esperado:** Popover fecha e preenche Conta/Dígito corretamente.
+- **Risco:** Seleção captura o índice errado da lista renderizada.
+
+#### Teste: Ocultar Conta Própria (RN03.11)
+- **O Que:** Abrir a lista de contas para transferir.
+- **Esperado:** A conta do próprio usuário logado NÃO deve aparecer na UI.
+- **Risco:** Usuário consegue clicar no próprio nome, gerando erro de Anti-Fraude.
+
+---
+
+### 4️⃣ ESTADO VISUAL DURANTE REQUISIÇÕES (SPINNERS E FEEDBACK)
+
+#### Teste: Spinner e Disabled State
+- **O Que:** Observar o botão ao submeter formulários de Cadastro ou Transferência.
+- **Esperado:** - Opacidade muda ou atributo `disabled` é aplicado.
+  - Spinner/Loading é exibido claramente.
+- **Risco:** Falta de feedback causa ansiedade no usuário, levando a cliques múltiplos.
+
+#### Teste: Formatação de Máscaras em Tempo Real (Currency/CPF)
+- **O Que:** Digitar "10000" no campo de transferência e "11122233344" no campo de CPF do cadastro.
+- **Esperado:** - Transferência formata para `R$ 10.000,00`.
+  - CPF formata para `111.222.333-44`.
+- **Risco:** Erro de regex na máscara impedindo o usuário de digitar ou apagando dígitos.
+
+---
+
+## 📝 Anotações da Sessão
+
+Use este espaço para registrar descobertas durante a execução do Charter:
+
+
+
+
+ppppppppppppppppppppppppppppppppp
+
+
+/**
+ * Test Charter: Riscos de UI (Valor Limite e Concorrência)
  * 
  * Sessão SBTM focada em validações de UI e comportamentos em ações concorrentes
  * Duração: 90 minutos

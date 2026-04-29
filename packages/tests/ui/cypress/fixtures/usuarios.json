@@ -1,0 +1,20 @@
+{
+  "cadastroValido": {
+    "nome": "QA Cypress User",
+    "senha": "Senha@123456"
+  },
+  "cadastroInvalido": {
+    "senhaCurta": "12345",
+    "senhaErrada": "Senha@Errada"
+  },
+  "login": {
+    "valido": {
+      "email": "qa_login_sucesso@m3bank.test",
+      "senha": "Senha@123456"
+    },
+    "invalido": {
+      "emailNaoCadastrado": "fantasma@m3bank.test",
+      "senhaErrada": "SenhaIncorreta123"
+    }
+  }
+}

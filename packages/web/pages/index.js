@@ -80,7 +80,7 @@ export default function IndexPage() {
       registerForm.confirmPassword &&
       registerForm.password !== registerForm.confirmPassword
     ) {
-      nextErrors.confirmPassword = 'As senhas precisam ser iguais';
+      nextErrors.confirmPassword = 'As senhas não coincidem';
     }
 
     setErrors(nextErrors);
