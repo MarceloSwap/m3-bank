@@ -61,11 +61,11 @@ npm run cleanup
 - Relatorio de Execucao QA: `docs/m3-bank.wiki/7-Relatorios-de-Execucao.md`
 - Mapa mental API: `docs/mindmaps/api.md`
 
-  <img src="https://github.com/MarceloSwap/m3-bank/blob/8f0f11ab77b26f0412b58d5b7a1d0f1117c14b48/docs/01%20test%20api.gif" alt="Mocha-Chai-Supertest" whith="100%">
+  <img src="https://github.com/MarceloSwap/m3-bank/blob/69c36255c8bdf09f9db472b3bf4d80ac6d048f83/docs/mindmaps/api.png" alt="API" whith="100%">
 
 - Mapa mental Web: `docs/mindmaps/web.md`
 
-  <img src="https://github.com/MarceloSwap/m3-bank/blob/8f0f11ab77b26f0412b58d5b7a1d0f1117c14b48/docs/01%20test%20api.gif" alt="Mocha-Chai-Supertest" whith="100%">
+  <img src="https://github.com/MarceloSwap/m3-bank/blob/69c36255c8bdf09f9db472b3bf4d80ac6d048f83/docs/mindmaps/frontend.png" alt="Frontend" whith="100%">
 
 ## Métricas auditadas em 02/05/2026
 
