@@ -31,11 +31,23 @@ git checkout -b test/rn01-rn07-cypress
 
 ## Comandos principais
 
+
+
 ```bash
 npm install
 npm run seed
 npm run dev:api
+```
+
+  <img src="https://github.com/MarceloSwap/m3-bank/blob/8f0f11ab77b26f0412b58d5b7a1d0f1117c14b48/docs/01%20test%20api.gif" alt="Mocha-Chai-Supertest="100%">
+
+```bash
 npm run dev:web
+```
+
+  <img src="https://github.com/MarceloSwap/m3-bank/blob/8f0f11ab77b26f0412b58d5b7a1d0f1117c14b48/docs/02%20test%20web.gif" alt="Cypress="100%">
+
+```bash
 npm run test:e2e
 npm run test:api
 npm run cleanup:dry
