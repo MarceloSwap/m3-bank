@@ -60,7 +60,12 @@ npm run cleanup
 - Reporte de Defeitos: `docs/m3-bank.wiki/6-Reporte-de-Defeitos.md`
 - Relatorio de Execucao QA: `docs/m3-bank.wiki/7-Relatorios-de-Execucao.md`
 - Mapa mental API: `docs/mindmaps/api.md`
+
+  <img src="https://github.com/MarceloSwap/m3-bank/blob/8f0f11ab77b26f0412b58d5b7a1d0f1117c14b48/docs/01%20test%20api.gif" alt="Mocha-Chai-Supertest" whith="100%">
+
 - Mapa mental Web: `docs/mindmaps/web.md`
+
+  <img src="https://github.com/MarceloSwap/m3-bank/blob/8f0f11ab77b26f0412b58d5b7a1d0f1117c14b48/docs/01%20test%20api.gif" alt="Mocha-Chai-Supertest" whith="100%">
 
 ## Métricas auditadas em 02/05/2026
 
@@ -292,7 +297,9 @@ npm run start:web    # Frontend em modo produção
 ## Limpeza do banco (se necessário)
 
 Para resetar completamente o banco:
+Entrar no banco (MySQL)
 ```sql
+mysql -u root -p
 DROP DATABASE m3_bank;
 CREATE DATABASE m3_bank;
 ```
