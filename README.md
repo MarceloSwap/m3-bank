@@ -18,39 +18,27 @@ O diretorio `packages/tests` concentra a entrega principal de QA do projeto: aut
 
 ```text
 m3-bank/
-  .github/
-    workflows/
-      e2e-tests.yml                  # Pipeline de automacao E2E no GitHub Actions
-  docs/
-    m3-bank.wiki/                    # Documentacao QA baseada em ISO 29119-3
-    mindmaps/                        # Mapas mentais de API e Web
-  packages/
-    api/                             # Backend REST/GraphQL na porta 3334
-    web/                             # Frontend Next.js na porta 3000
-    tests/                           # Principal diretorio de QA e automacao
-      package.json                   # Scripts de teste, limpeza e execucao
-      README.md                      # Documentacao tecnica da suite de testes
-      api/
-        config/
-          baseConfig.js              # Configuracao global dos testes Supertest/Mocha
-        docs/
-          CHARTER-API-VADER.md       # Charter de auditoria VADER
-          GESTAO-DADOS-TESTE.md      # Estrategia de dados e limpeza cirurgica
-        fixtures/                    # Payloads base para testes de API
-        scripts/
-          cleanup-tests.js           # Limpa somente dados gerados pela automacao
-        tests/
-          bdd/                       # Especificacoes Gherkin RN01-RN07
-          rest/                      # Specs Supertest/Mocha RN01-RN07 + VADER
-      ui/
-        cypress.config.js            # Configuracao Cypress
-        cypress/
-          e2e/                       # Specs Cypress RN01-RN07
-          fixtures/
-            usuarios.json            # Massa de dados usada pela UI
-          support/
-            commands.js              # Comandos customizados Cypress
-            e2e.js                   # Setup global Cypress
+├── docs/
+│   ├── m3-bank.wiki/          # Documentação QA (ISO 29119-3)[cite: 1]
+│   └── mindmaps/              # Mapas mentais de API e Web[cite: 1]
+└── packages/
+    ├── api/                   # Backend REST/GraphQL (Porta 3334)[cite: 1]
+    ├── web/                   # Frontend Next.js (Porta 3000)[cite: 1]
+    └── tests/                 # Core de QA e Automação[cite: 1]
+        ├── api/               # Testes de API (Supertest + Mocha)[cite: 1]
+        │   ├── config/        # Configurações globais[cite: 1]
+        │   ├── docs/          # Auditoria VADER e Gestão de Dados[cite: 1]
+        │   ├── fixtures/      # Payloads e massas de teste[cite: 1]
+        │   ├── scripts/       # Scripts de limpeza cirúrgica[cite: 1]
+        │   └── tests/         # Specs BDD (Gherkin) e REST[cite: 1]
+        ├── ui/                # Testes End-to-End (Cypress)[cite: 1]
+        │   ├── cypress/
+        │   │   ├── e2e/       # Specs RN01-RN07[cite: 1]
+        │   │   ├── fixtures/  # Massa de dados da UI[cite: 1]
+        │   │   └── support/   # Commands e Setup global[cite: 1]
+        │   └── cypress.config.js
+        ├── package.json       # Scripts de execução e CI/CD[cite: 1]
+        └── README.md          # Guia técnico da suíte de testes[cite: 1]
 ```
 
 ### Mapa rapido de `packages/tests`
