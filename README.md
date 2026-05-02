@@ -1,6 +1,6 @@
 # M3 Bank
 
-Monorepo de portfolio para QA Engineering com API REST/GraphQL na porta `3334`, Web Next.js na porta `3000`, Cypress E2E, Supertest API, GitFlow, CI/CD e documentacao baseada em ISO 29119-3.
+Monorepo de portfolio para QA Engineering com API REST/GraphQL na porta `3334`, Web Next.js na porta `3000`, Cypress E2E, Supertest API, GitFlow e documentacao baseada em ISO 29119-3.
 
 ## Stack de QA
 
