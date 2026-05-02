@@ -1,0 +1,40 @@
+{
+  "name": "m3-bank-tests",
+  "version": "1.0.0",
+  "description": "Test automation suite for M3 Bank - Cypress E2E and Supertest API with SBTM support",
+  "private": true,
+  "scripts": {
+    "test:api": "mocha api/tests/**/*.spec.js --require api/config/baseConfig.js --reporter mochawesome --reporter-options reportDir=reports/api,reportFilename=api-report.html && start reports/api/api-report.html",
+    "test:e2e": "cypress run --project ui",
+    "test:e2e:open": "cypress open --project ui",
+    "test:all": "npm run test:api && npm run test:e2e",
+    "cleanup": "node api/scripts/cleanup-tests.js",
+    "cleanup:dry": "node api/scripts/cleanup-tests.js --dry-run",
+    "cleanup:report": "node api/scripts/cleanup-tests.js --report",
+    "cleanup-qa": "node api/scripts/cleanup-tests.js",
+    "seed-db": "npm --workspace packages/api run seed"
+  },
+  "keywords": [
+    "testing",
+    "cypress",
+    "supertest",
+    "mocha",
+    "chai",
+    "api",
+    "e2e",
+    "sbtm",
+    "quality-assurance"
+  ],
+  "author": "M3 Bank QA Team",
+  "license": "MIT",
+  "devDependencies": {
+    "chai": "^4.3.10",
+    "cypress": "^13.6.2",
+    "mocha": "^10.2.0",
+    "mochawesome": "^7.1.3",
+    "supertest": "^7.2.2"
+  },
+  "dependencies": {
+    "mysql2": "^3.6.5"
+  }
+}

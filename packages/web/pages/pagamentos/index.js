@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
-import styled from 'styled-components';
 import Field from '../../src/components/Field';
 import Modal from '../../src/components/Modal';
 import ProtectedPage from '../../src/components/ProtectedPage';
@@ -28,16 +27,8 @@ export default function PaymentsPage() {
         title: 'Pagamento',
         message: `${data.message}. Deseja fazer outro pagamento ou voltar para a Home?`,
         actions: [
-          {
-            label: 'Fazer outro pagamento',
-            onClick: () => setModal(null),
-            variant: 'primary'
-          },
-          {
-            label: 'Voltar para Home',
-            onClick: () => router.push('/home'),
-            variant: 'secondary'
-          }
+          { label: 'Fazer outro pagamento', onClick: () => setModal(null), variant: 'primary' },
+          { label: 'Voltar para Home', onClick: () => router.push('/home'), variant: 'secondary' }
         ]
       });
       setAmount('');
@@ -45,7 +36,7 @@ export default function PaymentsPage() {
       setModal({
         type: 'error',
         title: 'Falha no pagamento',
-        message: error.response?.data?.message || 'Não foi possível simular a leitura'
+        message: error.response?.data?.message || 'Nao foi possivel simular a leitura'
       });
     }
   }
@@ -54,78 +45,27 @@ export default function PaymentsPage() {
     <ProtectedPage>
       <Shell
         title="Pagamentos com Pix simulado"
-        subtitle="A tela agora conversa com a nova paleta e mantém a navegação principal sempre visível."
+        subtitle="Simule a leitura de QR Code estatico e valide debito em saldo e extrato."
       >
-        <Grid>
-          <Card>
+        <div className="payment-grid">
+          <section className="payment-card">
             <QrMock />
-            <Caption>QR Code estático para cenários E2E</Caption>
-          </Card>
+            <p className="payment-caption">QR Code estatico para cenarios E2E</p>
+          </section>
 
-          <Card>
-            <Field
-              label="Valor do pagamento"
-              type="number"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-            />
-            <Field
-              label="Descrição"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-            />
-            <ActionButton type="button" onClick={handleSimulate}>
+          <section className="payment-card">
+            <Field label="Valor do pagamento" type="number" value={amount} onChange={(event) => setAmount(event.target.value)} />
+            <Field label="Descricao" value={description} onChange={(event) => setDescription(event.target.value)} />
+            <button className="button-primary" type="button" onClick={handleSimulate}>
               Simular Leitura
-            </ActionButton>
-          </Card>
-        </Grid>
+            </button>
+          </section>
+        </div>
 
         {modal ? (
-          <Modal
-            type={modal.type}
-            title={modal.title}
-            message={modal.message}
-            actions={modal.actions}
-            onClose={() => setModal(null)}
-          />
+          <Modal type={modal.type} title={modal.title} message={modal.message} actions={modal.actions} onClose={() => setModal(null)} />
         ) : null}
       </Shell>
     </ProtectedPage>
   );
 }
-
-const Grid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
-
-  @media (max-width: 900px) {
-    grid-template-columns: 1fr;
-  }
-`;
-
-const Card = styled.section`
-  display: grid;
-  justify-items: center;
-  gap: 18px;
-  padding: 28px;
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-`;
-
-const Caption = styled.p`
-  margin: 0;
-  color: rgba(255, 255, 255, 0.78);
-`;
-
-const ActionButton = styled.button`
-  border: 0;
-  border-radius: 16px;
-  padding: 14px 18px;
-  background: ${({ theme }) => theme.colors.primary};
-  color: ${({ theme }) => theme.colors.ink};
-  cursor: pointer;
-  font-weight: 700;
-  width: 100%;
-`;

@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt'); // Importação do BCrypt
 const pool = require('../db/pool');
 const env = require('../config/env');
 const AppError = require('../utils/AppError');
@@ -6,6 +7,8 @@ const { isValidEmail } = require('../utils/validators');
 const userRepository = require('../repositories/userRepository');
 const accountRepository = require('../repositories/accountRepository');
 const statementRepository = require('../repositories/statementRepository');
+
+const SALT_ROUNDS = 10; // Custo do processamento da criptografia
 
 function buildAccountNumbers(userId) {
   const base = String(100000 + userId);
@@ -49,7 +52,10 @@ async function login({ email, password }) {
       throw new AppError('Muitas tentativas falhas. Tente novamente em 5 minutos.', 401);
     }
 
-    if (user.senha !== password) {
+    // --- MUDANÇA AQUI: Comparação Criptografada ---
+    const isPasswordValid = await bcrypt.compare(password, user.senha);
+
+    if (!isPasswordValid) {
       const attempts = (user.tentativas_falha_login || 0) + 1;
       const shouldLock = attempts >= 3;
       const nextLock = shouldLock ? new Date(Date.now() + 5 * 60 * 1000) : null;
@@ -91,37 +97,15 @@ async function login({ email, password }) {
 async function register(payload) {
   const { name, email, password, confirmPassword, cpf, createWithBalance } = payload;
 
-  if (!name) {
-    throw new AppError('Nome não pode ser vazio', 400);
-  }
-
-  if (!email) {
-    throw new AppError('Email não pode ser vazio', 400);
-  }
-
-  if (!password) {
-    throw new AppError('Senha não pode ser vazio', 400);
-  }
-
-  if (!confirmPassword) {
-    throw new AppError('Confirmar senha não pode ser vazio', 400);
-  }
-
-  if (!isValidEmail(email)) {
-    throw new AppError('Formato de e-mail inválido', 400);
-  }
-
-  if (password.length < 6) {
-    throw new AppError('Senha deve conter no mínimo 6 caracteres', 400);
-  }
-
-  if (password !== confirmPassword) {
-    throw new AppError('As senhas precisam ser iguais', 400);
-  }
-
-  if (!cpf) {
-    throw new AppError('CPF é obrigatório', 400);
-  }
+  // Validações de campos permanecem iguais...
+  if (!name) throw new AppError('Nome não pode ser vazio', 400);
+  if (!email) throw new AppError('Email não pode ser vazio', 400);
+  if (!password) throw new AppError('Senha não pode ser vazio', 400);
+  if (!confirmPassword) throw new AppError('Confirmar senha não pode ser vazio', 400);
+  if (!isValidEmail(email)) throw new AppError('Formato de e-mail inválido', 400);
+  if (password.length < 6) throw new AppError('Senha deve conter no mínimo 6 caracteres', 400);
+  if (password !== confirmPassword) throw new AppError('As senhas precisam ser iguais', 400);
+  if (!cpf) throw new AppError('CPF é obrigatório', 400);
 
   const connection = await pool.getConnection();
 
@@ -133,10 +117,13 @@ async function register(payload) {
       throw new AppError('E-mail já cadastrado', 400);
     }
 
+    // --- MUDANÇA AQUI: Hash da senha antes de salvar ---
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
     const userId = await userRepository.create(connection, {
       name,
       email,
-      password,
+      password: passwordHash, // Salva o hash
       cpf
     });
 
@@ -191,37 +178,27 @@ async function updateProfile(userId, payload) {
     }
 
     if (name !== undefined) {
-      // Atualizar nome
-      if (!name.trim()) {
-        throw new AppError('Nome não pode ser vazio', 400);
-      }
-
-      if (name.trim().length < 2) {
-        throw new AppError('Nome deve ter pelo menos 2 caracteres', 400);
-      }
-
+      if (!name.trim()) throw new AppError('Nome não pode ser vazio', 400);
+      if (name.trim().length < 2) throw new AppError('Nome deve ter pelo menos 2 caracteres', 400);
       await userRepository.updateName(connection, userId, name.trim());
     }
 
     if (newPassword !== undefined) {
-      // Atualizar senha
-      if (!currentPassword) {
-        throw new AppError('Senha atual é obrigatória', 400);
-      }
+      if (!currentPassword) throw new AppError('Senha atual é obrigatória', 400);
 
-      if (user.password !== currentPassword) {
+      // --- MUDANÇA AQUI: Validar senha atual com Bcrypt ---
+      const isOldPasswordValid = await bcrypt.compare(currentPassword, user.senha);
+      
+      if (!isOldPasswordValid) {
         throw new AppError('Senha atual incorreta', 400);
       }
 
-      if (!newPassword) {
-        throw new AppError('Nova senha é obrigatória', 400);
-      }
+      if (!newPassword) throw new AppError('Nova senha é obrigatória', 400);
+      if (newPassword.length < 6) throw new AppError('Nova senha deve ter pelo menos 6 caracteres', 400);
 
-      if (newPassword.length < 6) {
-        throw new AppError('Nova senha deve ter pelo menos 6 caracteres', 400);
-      }
-
-      await userRepository.updatePassword(connection, userId, newPassword);
+      // --- MUDANÇA AQUI: Hash da nova senha ---
+      const newPasswordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+      await userRepository.updatePassword(connection, userId, newPasswordHash);
     }
 
     await connection.commit();

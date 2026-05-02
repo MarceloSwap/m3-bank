@@ -11,6 +11,12 @@
     "dev:web": "npm --workspace packages/web run dev",
     "dev": "npm run dev:api",
     "seed": "npm --workspace packages/api run seed",
+    "test:e2e": "npm --prefix packages/tests run test:e2e",
+    "test:api": "npm --prefix packages/tests run test:api",
+    "test:all": "npm --prefix packages/tests run test:api && npm --prefix packages/tests run test:e2e",
+    "cleanup": "npm --prefix packages/tests run cleanup",
+    "cleanup:dry": "npm --prefix packages/tests run cleanup:dry",
+    "cleanup:report": "npm --prefix packages/tests run cleanup:report",
     "start:api": "npm --workspace packages/api run start",
     "start:web": "npm --workspace packages/web run start"
   }

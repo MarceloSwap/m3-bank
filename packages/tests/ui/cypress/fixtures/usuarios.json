@@ -1,0 +1,39 @@
+{
+  "senhaPadrao": "Senha@123456",
+  "cadastroValido": {
+    "nome": "QA Cypress User",
+    "senha": "Senha@123456"
+  },
+  "cadastroInvalido": {
+    "senhaCurta": "12345",
+    "senhaErrada": "Senha@Errada"
+  },
+  "login": {
+    "invalido": {
+      "emailNaoCadastrado": "fantasma@m3bank.test",
+      "senhaErrada": "SenhaIncorreta123"
+    }
+  },
+  "transferencia": {
+    "limiteInferiorInvalido": "9.99",
+    "limiteInferiorValido": "10.00",
+    "valorSucesso": "150.00",
+    "valorAlto": "5000.01",
+    "tokenAutorizacao": "123456"
+  },
+  "deposito": {
+    "limiteInferiorInvalido": "9.99",
+    "limiteInferiorValido": "10.00",
+    "limiteSuperiorValido": "10000.00",
+    "limiteSuperiorInvalido": "10000.01"
+  },
+  "pix": {
+    "valorSucesso": "25.00",
+    "descricao": "Pix simulado Cypress"
+  },
+  "perfil": {
+    "nomeAtualizado": "QA Nome Atualizado",
+    "nomeInvalido": "A",
+    "novaSenha": "Senha@654321"
+  }
+}

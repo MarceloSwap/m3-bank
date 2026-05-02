@@ -1,0 +1,150 @@
+# M3 Bank API
+
+- M3 Bank API `http://localhost:3334`
+  - Health Check
+    - `GET /health`
+      - Público — sem autenticação
+      - ✅ 200 `{ "status": "ok" }`
+  - Documentação
+    - `GET /docs`
+      - Swagger UI — sem autenticação
+      - ✅ 200 HTML da interface Swagger
+    - `POST /graphql`
+      - Apollo Server
+      - Autenticação via header `Authorization: Bearer <token>` no contexto
+      - Queries
+        - `me` → dados da conta autenticada
+        - `statement(page, limit, periodDays)` → extrato paginado
+      - Mutations
+        - `login(input: LoginInput!)` → `LoginResponse`
+        - `register(input: RegisterInput!)` → `RegisterResponse`
+        - `transfer(input: TransferInput!)` → `MutationResponse`
+        - `simulatePix(input: PixInput!)` → `MutationResponse`
+  - Autenticação `/api/auth`
+    - `POST /api/auth/register`
+      - Público — sem token
+      - Body `{ name, email, password, confirmPassword, cpf, createWithBalance: boolean }`
+      - ✅ 201 `{ message: "Conta criada com sucesso", accountNumber, accountDigit, initialBalance }`
+        - `createWithBalance: true`  → `initialBalance: 1000`
+        - `createWithBalance: false` → `initialBalance: 0`
+      - ❌ 400 `"Nome não pode ser vazio"` — campo `name` ausente
+      - ❌ 400 `"Email não pode ser vazio"` — campo `email` ausente
+      - ❌ 400 `"Senha não pode ser vazio"` — campo `password` ausente
+      - ❌ 400 `"Confirmar senha não pode ser vazio"` — campo `confirmPassword` ausente
+      - ❌ 400 `"CPF é obrigatório"` — campo `cpf` ausente
+      - ❌ 400 `"Formato de e-mail inválido"` — e-mail fora do padrão `x@x.x`
+      - ❌ 400 `"Senha deve conter no mínimo 6 caracteres"` — `password.length < 6`
+      - ❌ 400 `"As senhas precisam ser iguais"` — `password !== confirmPassword`
+      - ❌ 400 `"E-mail já cadastrado"` — e-mail duplicado no banco
+    - `POST /api/auth/login`
+      - Público — sem token
+      - Body `{ email, password }`
+      - ✅ 200 `{ token, expiresIn: 3600, user: { id, name, email }, account: { id, number, digit, balance } }`
+        - JWT expira em 1 hora
+        - Payload do token `{ sub: userId, email, accountId, iat, exp }`
+      - ❌ 400 `"Usuário e senha precisam ser preenchidos"` — `email` ou `password` vazios/ausentes
+      - ❌ 401 `"Credenciais inválidas"` — e-mail não cadastrado ou senha incorreta
+      - ❌ 401 `"Muitas tentativas falhas. Tente novamente em 5 minutos."` — após 3 falhas consecutivas (bloqueio de 5 min)
+    - `PUT /api/auth/profile`
+      - 🔒 Requer `Authorization: Bearer <token>`
+      - Body alterar nome `{ name }`
+      - Body alterar senha `{ currentPassword, newPassword }`
+      - ✅ 200 `{ message: "Perfil atualizado com sucesso" }`
+      - ❌ 400 `"Nome não pode ser vazio"` — `name` vazio ou só espaços
+      - ❌ 400 `"Nome deve ter pelo menos 2 caracteres"` — `name.trim().length < 2`
+      - ❌ 400 `"Senha atual é obrigatória"` — `newPassword` enviado sem `currentPassword`
+      - ❌ 400 `"Senha atual incorreta"` — bcrypt.compare falhou
+      - ❌ 400 `"Nova senha é obrigatória"` — `newPassword` vazio
+      - ❌ 400 `"Nova senha deve ter pelo menos 6 caracteres"` — `newPassword.length < 6`
+      - ❌ 401 `"Token inválido ou expirado"` — sem token ou token inválido/expirado
+      - ❌ 404 `"Usuário não encontrado"` — `userId` do token não existe no banco
+  - Contas `/api/accounts`
+    - `GET /api/accounts/me`
+      - 🔒 Requer `Authorization: Bearer <token>`
+      - ✅ 200 `{ id, number, digit, balance, active, owner: { name, email, cpf } }`
+      - ❌ 401 `"Token inválido ou expirado"` — sem token ou token inválido
+      - ❌ 404 `"Conta não encontrada"` — conta do usuário não existe
+    - `GET /api/accounts`
+      - 🔒 Requer `Authorization: Bearer <token>`
+      - Retorna todas as contas ativas — usado pela UI para popular lista de favorecidos
+      - ⚠️ DEF-004 BOLA/IDOR — qualquer token válido acessa dados de todos os usuários
+      - ✅ 200 `{ accounts: [ { id, number, digit, balance, active, ownerName, ownerEmail } ] }`
+      - ❌ 401 `"Token inválido ou expirado"` — sem token ou token inválido
+    - `GET /api/accounts/statement`
+      - 🔒 Requer `Authorization: Bearer <token>`
+      - Query params `?page=1&limit=10&periodDays=30`
+        - `periodDays` aceita `7`, `15` ou `30` — qualquer outro valor usa padrão `30`
+        - `page` padrão `1` — `limit` padrão `10`
+      - ✅ 200 `{ page, limit, total, periodDays, balance, entries: [...] }`
+        - Cada entry `{ id, date, type, description, amount, direction, relatedAccount, favoredName, receiverName, receiverAccount }`
+        - `direction: "credit"` → entrada — renderizado em verde na UI
+        - `direction: "debit"` → saída — renderizado em vermelho com `(-)` na UI
+        - `description: "-"` quando não informada
+        - `type` possíveis `"Abertura de conta"` · `"Transferência enviada"` · `"Transferência recebida"` · `"Depósito"` · `"Pagamento Pix"`
+        - `relatedAccount: "QR ESTATICO"` para lançamentos de Pix — omitido na UI
+      - ❌ 401 `"Token inválido ou expirado"` — sem token ou token inválido
+      - ❌ 404 `"Conta não encontrada"` — conta do usuário não existe
+  - Transferências `/api/transfers`
+    - `POST /api/transfers`
+      - 🔒 Requer `Authorization: Bearer <token>`
+      - Body `{ accountNumber, accountDigit, amount, description, authorizationToken? }`
+      - ✅ 201 `{ message: "Transferência realizada com sucesso", balance: <novoSaldo> }`
+      - Validações — executadas nesta ordem no `transferService.js`
+        - ❌ 400 `"Conta inválida ou inexistente"` — `accountNumber` ou `accountDigit` ausentes ou não numéricos (pré-DB)
+        - ❌ 400 `"Descrição é obrigatória"` — `description` ausente
+        - ❌ 400 `"Valor mínimo para transferência é de R$ 10,00"` — `amount < 10` ou não numérico
+        - ❌ 400 `"Valor excede o limite noturno permitido"` — `amount > 1000` entre 20h00–05h59 (fuso `APP_TIMEZONE`)
+        - ❌ 400 `"Valor excede o limite máximo permitido para transferência"` — `amount > 10000` entre 06h00–19h59
+        - ❌ 404 `"Conta inválida ou inexistente"` — conta destino não encontrada no banco ou inativa (pós-DB)
+        - ❌ 400 `"Não é possível transferir para a própria conta"` — `sourceAccount.id === destinationAccount.id`
+        - ❌ 400 `"Saldo insuficiente para realizar a transferência"` — `balance < amount`
+        - ❌ 401 `"Token de autorização inválido"` — `amount > 5000` e `authorizationToken !== "123456"`
+        - ❌ 401 `"Token inválido ou expirado"` — sem JWT ou JWT inválido no header
+      - Limite dinâmico por horário — fuso `APP_TIMEZONE=America/Sao_Paulo`
+        - Diurno 06h00–19h59 → máximo R$ 10.000,00
+        - Noturno 20h00–05h59 → máximo R$ 1.000,00
+      - Token especial — obrigatório quando `amount > 5000`
+        - `authorizationToken: "123456"` → aprovado
+        - ausente ou incorreto → ❌ 401
+      - Rollback automático em qualquer falha após `beginTransaction`
+      - Lançamentos gerados no extrato
+        - Conta origem → `"Transferência enviada"` · `direction: "debit"`
+        - Conta destino → `"Transferência recebida"` · `direction: "credit"`
+  - Depósitos `/api/deposits`
+    - `POST /api/deposits`
+      - 🔒 Requer `Authorization: Bearer <token>`
+      - Body `{ accountNumber, accountDigit, amount, description }`
+      - ✅ 201 `{ message: "Depósito de R$ X,XX realizado com sucesso na conta XXXXXX-X", newBalance }`
+      - Validações — executadas nesta ordem no `depositService.js`
+        - ❌ 400 `"Conta inválida ou inexistente"` — `accountNumber` ou `accountDigit` ausentes ou não numéricos (pré-DB)
+        - ❌ 400 `"Descrição é obrigatória"` — `description` ausente
+        - ❌ 400 `"Valor mínimo para depósito é de R$ 10,00"` — `amount < 10` ou não numérico
+        - ❌ 400 `"Valor máximo para depósito é de R$ 10.000,00"` — `amount > 10000`
+        - ❌ 404 `"Conta inválida ou inexistente"` — conta destino não encontrada no banco ou inativa (pós-DB)
+        - ❌ 401 `"Token inválido ou expirado"` — sem JWT ou JWT inválido no header
+      - Rollback automático em qualquer falha após `beginTransaction`
+      - Lançamento gerado → `"Depósito"` · `direction: "credit"` na conta destino
+  - Pagamentos `/api/payments`
+    - `POST /api/payments/pix/simulate`
+      - 🔒 Requer `Authorization: Bearer <token>`
+      - Body `{ amount, description? }`
+        - `description` opcional — padrão `"Pagamento Pix simulado"` quando ausente
+      - ✅ 201 `{ message: "Pagamento Pix simulado realizado com sucesso", balance: <novoSaldo> }`
+      - Validações — executadas nesta ordem no `paymentService.js`
+        - ❌ 400 `"Informe um valor válido para o pagamento"` — `amount <= 0` ou não numérico
+        - ❌ 404 `"Conta não encontrada"` — conta do usuário autenticado não existe
+        - ❌ 400 `"Saldo insuficiente para realizar o pagamento"` — `balance < amount`
+        - ❌ 401 `"Token inválido ou expirado"` — sem JWT ou JWT inválido no header
+      - Rollback automático em qualquer falha após `beginTransaction`
+      - Lançamento gerado → `"Pagamento Pix"` · `direction: "debit"` · `relatedAccount: "QR ESTATICO"`
+  - Middleware Global
+    - Autenticação JWT — `authMiddleware.js`
+      - Header `Authorization: Bearer <token>` obrigatório em todas as rotas 🔒
+      - Token ausente → ❌ 401 `"Token inválido ou expirado"` (retorno direto, sem next)
+      - Token inválido ou expirado → ❌ 401 via `verifyToken` → `AppError`
+    - Tratamento de Erros — `errorMiddleware.js`
+      - `AppError` → retorna `{ message, details? }` com o `statusCode` definido no throw
+      - Erros não tratados → ❌ 500 `{ message: "Erro interno do servidor" }`
+    - VADER — Verbos HTTP não permitidos
+      - `GET /api/auth/login` → ❌ 404/405
+      - `DELETE /api/auth/profile` → ❌ 404/405
