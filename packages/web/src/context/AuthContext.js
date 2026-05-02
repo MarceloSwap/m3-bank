@@ -20,8 +20,8 @@ export function AuthProvider({ children }) {
 
     if (storedSession) {
       const parsed = JSON.parse(storedSession);
-      setSession(parsed);
       setApiToken(parsed.token);
+      setSession(parsed);
     }
 
     setLoading(false);
@@ -42,8 +42,8 @@ export function AuthProvider({ children }) {
       account: data.account
     };
 
-    setSession(nextSession);
     setApiToken(nextSession.token);
+    setSession(nextSession);
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(nextSession));
 
     return data;

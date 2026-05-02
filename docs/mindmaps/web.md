@@ -1,0 +1,156 @@
+# M3 Bank Web
+
+- M3 Bank Web `http://localhost:3000`
+  - Pública
+    - `/` — `pages/index.js`
+      - Aba Entrar
+        - Campos `E-mail` · `Senha`
+        - Botão `Acessar dashboard`
+        - Chama `POST /api/auth/login`
+        - ✅ Sucesso → redireciona para `/home` · armazena JWT no localStorage `m3-bank-auth`
+        - ❌ Campos vazios → modal `"Usuario e senha precisam ser preenchidos"` (validação client-side, sem chamada à API)
+        - ❌ Credenciais inválidas → modal com `error.response.data.message` da API
+        - ❌ Conta bloqueada → modal `"Muitas tentativas falhas. Tente novamente em 5 minutos."`
+        - Usuário já autenticado → redireciona automaticamente para `/home`
+      - Aba Cadastrar
+        - Campos `Nome` · `E-mail` · `CPF` · `Senha` · `Confirmar senha`
+        - Toggle `Criar conta com saldo` — padrão `true`
+        - Botão `Criar conta`
+        - Validações client-side — exibidas inline nos campos
+          - `"Nome nao pode ser vazio"` — `name` vazio
+          - `"Email nao pode ser vazio"` — `email` vazio
+          - `"CPF nao pode ser vazio"` — `cpf` vazio
+          - `"Senha nao pode ser vazio"` — `password` vazio
+          - `"Confirmar senha nao pode ser vazio"` — `confirmPassword` vazio
+          - `"Formato de e-mail invalido"` — e-mail fora do padrão
+          - `"Senha deve conter no minimo 6 caracteres"` — `password.length < 6`
+          - `"As senhas nao coincidem"` — `password !== confirmPassword`
+        - Chama `POST /api/auth/register`
+        - ✅ Sucesso → modal `"Conta criada com sucesso. Numero da conta: XXXXXX-X"` · volta para aba Entrar
+        - ❌ E-mail duplicado → modal com `error.response.data.message` da API
+  - Shell Autenticado — `src/components/Shell.js`
+    - Todas as rotas abaixo são protegidas por `ProtectedPage` — redireciona para `/` se sem token
+    - Header
+      - Logo M3 Bank
+      - Botão Voltar (quando disponível)
+      - `headerAction` — área contextual (lista de contas em `/transferencia` e `/deposito`)
+      - Badge da conta — número e dígito do usuário logado
+      - Botão `Sair` — limpa localStorage e redireciona para `/`
+    - Conteúdo
+      - `title` — título da página
+      - `subtitle` — descrição da funcionalidade
+  - Home `/home` — `pages/home/index.js`
+    - Chama `GET /api/accounts/me` via `refreshAccount()` ao carregar
+    - Seção Saldo
+      - Exibe `session.account.balance` formatado em BRL
+      - Label `"Saldo disponivel atualizado"`
+    - Atalhos rápidos — navegação para
+      - `/transferencia` · `/pagamentos` · `/deposito` · `/extrato` · `/perfil`
+    - Movimentações recentes
+      - Chama `GET /api/accounts/statement` (últimos lançamentos)
+      - Exibe `entry.type` · `entry.description` · `entry.relatedAccount` (quando não `"QR ESTATICO"`)
+      - Débito → classe `amount--debit` · prefixo `(-)`
+      - Crédito → classe `amount--credit`
+      - Sem movimentações → `"Nenhuma movimentacao recente encontrada."`
+  - Transferências `/transferencia` — `pages/transferencia/index.js`
+    - Chama `GET /api/accounts` ao montar — filtra a própria conta da lista
+    - Header Action — popover `"Mostrar/Ocultar contas disponiveis (N)"`
+      - Campo de busca por titular ou número de conta
+      - Clicar em uma conta → preenche `accountNumber` e `accountDigit` automaticamente
+      - Conta própria do usuário logado é excluída da lista (filtro client-side)
+    - Formulário
+      - `Numero da conta` — `inputMode="numeric"`
+      - `Digito` — `inputMode="numeric"`
+      - `Valor` — `type="number"`
+      - `Descricao`
+      - `Token de autorizacao` — placeholder `"Obrigatorio acima de R$ 5.000,00"`
+    - Botão `Transferir agora`
+    - Validações client-side — exibidas inline
+      - `"Conta invalida ou inexistente"` — `accountNumber` ou `accountDigit` não numéricos
+      - `"Descricao e obrigatoria"` — `description` vazio
+      - `"Valor minimo para transferencia e de R$ 10,00"` — `amount < 10` ou vazio
+    - Chama `POST /api/transfers`
+    - ✅ Sucesso → modal com `data.message` · opções `"Fazer outra transferencia"` ou `"Voltar para Home"`
+    - ❌ Erro da API → modal com `error.response.data.message`
+      - `"Conta inválida ou inexistente"` — conta destino não existe ou inativa
+      - `"Não é possível transferir para a própria conta"` — anti-fraude
+      - `"Saldo insuficiente para realizar a transferência"`
+      - `"Token de autorização inválido"` — token errado para valor > R$ 5.000
+      - `"Valor excede o limite noturno permitido"` — entre 20h–05h59
+      - `"Valor excede o limite máximo permitido para transferência"` — diurno > R$ 10.000
+  - Depósito `/deposito` — `pages/deposito/index.js`
+    - Chama `GET /api/accounts` ao montar — exibe todas as contas ativas
+    - Header Action — popover `"Mostrar/Ocultar contas disponiveis (N)"`
+      - Campo de busca por titular ou número de conta
+      - Clicar em uma conta → preenche `accountNumber` e `accountDigit` automaticamente
+    - Formulário
+      - `Numero da conta` — `inputMode="numeric"`
+      - `Digito` — `inputMode="numeric"`
+      - `Valor (R$)` — `type="number"` · placeholder `"Minimo R$ 10,00"`
+      - `Descricao`
+    - Botão `Confirmar Deposito`
+    - Validações client-side — exibidas inline
+      - `"Conta invalida ou inexistente"` — `accountNumber` ou `accountDigit` não numéricos
+      - `"Descricao e obrigatoria"` — `description` vazio
+      - `"Valor minimo para deposito e R$ 10,00"` — `amount < 10` ou vazio
+      - `"Valor maximo para deposito e R$ 10.000,00"` — `amount > 10000`
+    - Chama `POST /api/deposits`
+    - ✅ Sucesso → modal com `data.message` · opções `"Fazer outro deposito"` ou `"Voltar para Home"`
+    - ❌ Erro da API → modal com `error.response.data.message`
+      - `"Conta inválida ou inexistente"` — conta destino não existe ou inativa
+  - Pagamentos `/pagamentos` — `pages/pagamentos/index.js`
+    - QR Code estático — componente `QrMock` (`<svg aria-label="QR Code">`)
+    - Campos
+      - `Valor do pagamento` — `type="number"`
+      - `Descricao` — valor padrão `"Pix simulado de teste"`
+    - Botão `Simular Leitura`
+    - Chama `POST /api/payments/pix/simulate`
+    - ✅ Sucesso → modal com `data.message` · opções `"Fazer outro pagamento"` ou `"Voltar para Home"`
+    - ❌ Erro da API → modal `"Nao foi possivel simular a leitura"` ou mensagem da API
+      - `"Saldo insuficiente para realizar o pagamento"`
+      - `"Informe um valor válido para o pagamento"` — `amount <= 0`
+  - Extrato `/extrato` — `pages/extrato/index.js`
+    - Chama em paralelo `GET /api/accounts/statement` + `GET /api/accounts/me` ao montar e ao trocar filtro
+    - Seção Saldo
+      - Exibe saldo de `GET /api/accounts/me` formatado em BRL
+      - Label `"Saldo disponivel"`
+    - Filtros de período — botões com classe `filter-button--active` no selecionado
+      - `Ultimos 7 dias` → `?periodDays=7`
+      - `Ultimos 15 dias` → `?periodDays=15`
+      - `Ultimos 30 dias` → `?periodDays=30` (padrão)
+    - Lista de lançamentos
+      - `entry.type` — tipo da transação
+      - `entry.date` — formatado `toLocaleString("pt-BR")`
+      - `entry.description` — exibe `"-"` quando ausente
+      - `entry.favoredName` — exibido quando presente
+      - `entry.relatedAccount` — exibido quando presente e diferente de `"QR ESTATICO"`
+      - Débito → classe `statement-value--debit` · prefixo `(-) `
+      - Crédito → classe `statement-value--credit`
+      - Sem itens → `"Nenhum item encontrado neste periodo."`
+    - Paginação
+      - Botão `Anterior` — desabilitado quando `page <= 1`
+      - Indicador `"Pagina X de Y"`
+      - Botão `Proxima` — desabilitado quando `page >= totalPages`
+      - `totalPages = Math.ceil(total / limit)`
+  - Perfil `/perfil` — `pages/perfil/index.js`
+    - Chama `PUT /api/auth/profile`
+    - Aba `Alterar Nome` — ativa por padrão (`button-tab--active`)
+      - Campo `Nome completo` — pré-preenchido com `session.user.name`
+      - Botão `Atualizar Nome`
+      - Validações client-side
+        - `"Nome nao pode ser vazio"` — `name` vazio ou só espaços
+        - `"Nome deve ter pelo menos 2 caracteres"` — `name.trim().length < 2`
+      - ✅ Sucesso → modal `"Nome atualizado com sucesso!"` · `refreshAccount()` atualiza header em tempo real
+      - ❌ Erro da API → modal com `error.response.data.message`
+    - Aba `Alterar Senha`
+      - Campos `Senha atual` · `Nova senha` · `Confirmar nova senha` — todos `type="password"`
+      - Botão `Alterar Senha`
+      - Validações client-side
+        - `"Senha atual e obrigatoria"` — `currentPassword` vazio
+        - `"Nova senha e obrigatoria"` — `newPassword` vazio
+        - `"Nova senha deve ter pelo menos 6 caracteres"` — `newPassword.length < 6`
+        - `"Confirmacao de senha e obrigatoria"` — `confirmPassword` vazio
+        - `"As senhas nao coincidem"` — `newPassword !== confirmPassword`
+      - ✅ Sucesso → modal `"Senha alterada com sucesso!"` · limpa os campos
+      - ❌ Erro da API → modal com `error.response.data.message`
+        - `"Senha atual incorreta"` — bcrypt.compare falhou no backend

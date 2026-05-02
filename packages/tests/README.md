@@ -9,7 +9,7 @@ Framework de testes automatizado com suporte a Testes Exploratórios (SBTM).
 ---
 
 ## 📦 Estrutura
-
+```
 packages/tests/
 ├── api/                              # Testes de API Backend
 │   ├── config/baseConfig.js          # Configuração de URLs e DB
@@ -28,7 +28,7 @@ packages/tests/
 ├── package.json                      # Scripts de execução e dependências
 ├── BACKLOG.md                        # Cards formatados para o projeto
 └── README.md                         # Este guia de infraestrutura
-
+```
 ---
 
 ## 🚀 Instalação e Uso

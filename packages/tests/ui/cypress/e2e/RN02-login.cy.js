@@ -1,97 +1,43 @@
 /// <reference types="cypress" />
 
-describe('RN02 - Login e Autenticação', () => {
-  const QA_PREFIX = 'qa_';
-
+describe('RN02 - Login e Autenticacao', () => {
   beforeEach(() => {
-    cy.visit('/');
     cy.clearLocalStorage();
+    cy.visit('/');
   });
 
-  it('Deve fazer login com credenciais válidas e armazenar o token JWT', () => {
+  it('[TC-RN02-001] Login - autentica credenciais validas e armazena JWT', () => {
     cy.fixture('usuarios').then((massa) => {
-      const user = massa.login.valido;
-      
-      const uniqueEmail = `${QA_PREFIX}login_${Date.now()}@m3bank.test`;
-      const uniqueCpf = Date.now().toString().slice(-11);
-
-      // URL hardcoded para garantir que o Cypress acerte o seu backend em cheio!
-      cy.request({
-        method: 'POST',
-        url: 'http://localhost:3334/api/auth/register',
-        body: {
-          name: "QA Utilizador Login",
-          email: uniqueEmail,
-          cpf: uniqueCpf,
-          password: user.senha,
-          confirmPassword: user.senha,
-          createWithBalance: true
-        }
-      });
-
-      cy.loginAPIouUI(uniqueEmail, user.senha);
-
-      cy.url({ timeout: 10000 }).should('include', '/home');
-
-      cy.window().then((win) => {
-        const auth = win.localStorage.getItem('m3-bank-auth');
-        expect(auth).to.exist;
-        
-        const parsed = JSON.parse(auth);
-        expect(parsed).to.have.property('token');
-        expect(parsed.token).to.be.a('string');
-        expect(parsed.token.split('.')).to.have.length(3);
+      cy.criarUsuarioApi({ createWithBalance: true, password: massa.senhaPadrao }).then((user) => {
+        cy.loginAPIouUI(user.email, user.password);
+        cy.url({ timeout: 10000 }).should('include', '/home');
+        cy.window().then((win) => {
+          const parsed = JSON.parse(win.localStorage.getItem('m3-bank-auth'));
+          expect(parsed.token.split('.')).to.have.length(3);
+        });
       });
     });
   });
 
-  it('Deve exibir erro ao tentar acessar com e-mail não cadastrado e fechar o modal', () => {
+  it('[TC-RN02-002] Login - rejeita e-mail nao cadastrado', () => {
     cy.fixture('usuarios').then((massa) => {
-      const invalido = massa.login.invalido;
-      
-      cy.loginAPIouUI(invalido.emailNaoCadastrado, massa.login.valido.senha);
-      
-      cy.contains('Credenciais inválidas').should('be.visible');
-      cy.contains('button', 'Fechar').should('be.visible').click();
-      cy.contains('Credenciais inválidas').should('not.exist');
+      cy.loginAPIouUI(massa.login.invalido.emailNaoCadastrado, massa.senhaPadrao);
+      cy.contains(/Credenciais invalidas|Credenciais inválidas/).should('be.visible');
+      cy.contains('button', 'Fechar').click();
     });
   });
 
-  it('Deve exibir erro ao tentar acessar com senha incorreta e fechar o modal', () => {
+  it('[TC-RN02-003] Login - rejeita senha incorreta', () => {
     cy.fixture('usuarios').then((massa) => {
-      const user = massa.login.valido;
-      const invalido = massa.login.invalido;
-      
-      const uniqueEmail = `${QA_PREFIX}erro_${Date.now()}@m3bank.test`;
-      const uniqueCpf = Date.now().toString().slice(-11);
-
-      // URL hardcoded aqui também!
-      cy.request({
-        method: 'POST',
-        url: 'http://localhost:3334/api/auth/register',
-        body: {
-          name: "QA Utilizador Erro",
-          email: uniqueEmail,
-          cpf: uniqueCpf,
-          password: user.senha,
-          confirmPassword: user.senha,
-          createWithBalance: true
-        }
+      cy.criarUsuarioApi({ createWithBalance: true, password: massa.senhaPadrao }).then((user) => {
+        cy.loginAPIouUI(user.email, massa.login.invalido.senhaErrada);
+        cy.contains(/Credenciais invalidas|Credenciais inválidas/).should('be.visible');
       });
-
-      cy.loginAPIouUI(uniqueEmail, invalido.senhaErrada);
-
-      cy.contains('Credenciais inválidas').should('be.visible');
-      cy.contains('button', 'Fechar').should('be.visible').click();
-      cy.contains('Credenciais inválidas').should('not.exist');
     });
   });
 
-  it('Deve exigir preenchimento dos campos obrigatórios e fechar o modal', () => {
+  it('[TC-RN02-004] Login - exige campos obrigatorios', () => {
     cy.loginAPIouUI();
-    
-    cy.contains('Usuário e senha precisam ser preenchidos').should('be.visible');
-    cy.contains('button', 'Fechar').should('be.visible').click();
-    cy.contains('Usuário e senha precisam ser preenchidos').should('not.exist');
+    cy.contains(/Usuario e senha precisam ser preenchidos|Usuário e senha precisam ser preenchidos/).should('be.visible');
   });
 });

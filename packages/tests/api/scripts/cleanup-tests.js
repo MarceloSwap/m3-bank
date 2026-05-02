@@ -1,150 +1,193 @@
 /**
- * Cleanup Tests Script - Surgical Data Cleanup
- * 
- * Removes ONLY test data created during automation:
- * - Users with names starting with "qa_"
- * - Users with emails ending in "@test.com"
- * - All transactions related to these users
- * 
- * This preserves manual exploratory testing data and production-like records
+ * cleanup-tests.js
+ * Limpeza cirúrgica de dados gerados pela automação de testes.
+ *
+ * Cobre todos os padrões usados nos specs e no Cypress:
+ *   - emails terminando em @test.com        (Supertest/Mocha)
+ *   - emails terminando em @m3bank.test     (Cypress)
+ *   - nomes começando com qa_               (ambos)
+ *   - nomes começando com QA                (Cypress — criarUsuarioApi)
+ *   - emails do auditor VADER               (VADER-api.spec.js)
+ *
+ * Uso:
+ *   node cleanup-tests.js            → executa a limpeza
+ *   node cleanup-tests.js --dry-run  → só mostra o que seria deletado, sem apagar nada
+ *   node cleanup-tests.js --report   → só mostra contagem atual, sem apagar nada
  */
 
 const mysql = require('mysql2/promise');
-const path = require('path');
+const path  = require('path');
 const dotenv = require('dotenv');
 
-// Load environment configuration
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+
+const DRY_RUN = process.argv.includes('--dry-run');
+const REPORT_ONLY = process.argv.includes('--report');
 
 const DB_CONFIG = {
-  host: process.env.DB_HOST || 'localhost',
-  port: Number(process.env.DB_PORT || 3306),
-  user: process.env.DB_USER || 'root',
+  host:     process.env.DB_HOST     || 'localhost',
+  port:     Number(process.env.DB_PORT || 3306),
+  user:     process.env.DB_USER     || 'root',
   password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'm3_bank'
+  database: process.env.DB_NAME     || 'm3_bank'
 };
 
-const QA_PREFIX = 'qa_';
-const TEST_DOMAIN = '@test.com';
+// Padrões que identificam dados de teste — NÃO altere sem revisar os specs
+const TEST_PATTERNS = {
+  emailDomains: ['@test.com', '@m3bank.test'],
+  namePrefixes: ['qa_', 'QA '],
+  exactEmails:  ['auditoria_vader@m3bank.test']
+};
 
-async function cleanupTests() {
+function buildWhereClause() {
+  const conditions = [
+    ...TEST_PATTERNS.emailDomains.map(() => `email LIKE CONCAT('%', ?)`),
+    ...TEST_PATTERNS.namePrefixes.map(() => `nome LIKE CONCAT(?, '%')`),
+    ...TEST_PATTERNS.exactEmails.map(() => `email = ?`)
+  ];
+  const values = [
+    ...TEST_PATTERNS.emailDomains,
+    ...TEST_PATTERNS.namePrefixes,
+    ...TEST_PATTERNS.exactEmails
+  ];
+  return { where: conditions.join(' OR '), values };
+}
+
+async function getReport(connection) {
+  const { where, values } = buildWhereClause();
+
+  const [[{ total: totalUsers }]] = await connection.query(
+    `SELECT COUNT(*) as total FROM usuarios WHERE ${where}`, values
+  );
+
+  const [testUsers] = await connection.query(
+    `SELECT id FROM usuarios WHERE ${where}`, values
+  );
+  const ids = testUsers.map(u => u.id);
+
+  if (ids.length === 0) {
+    return { totalUsers: 0, totalAccounts: 0, totalTransfers: 0,
+             totalDeposits: 0, totalPix: 0, totalEntries: 0, ids: [] };
+  }
+
+  const [[{ totalAccounts }]] = await connection.query(
+    `SELECT COUNT(*) as totalAccounts FROM contas WHERE usuario_id IN (?)`, [ids]
+  );
+
+  const [accounts] = await connection.query(
+    `SELECT id FROM contas WHERE usuario_id IN (?)`, [ids]
+  );
+  const accountIds = accounts.map(a => a.id);
+
+  if (accountIds.length === 0) {
+    return { totalUsers, totalAccounts: 0, totalTransfers: 0,
+             totalDeposits: 0, totalPix: 0, totalEntries: 0, ids };
+  }
+
+  const [[{ totalTransfers }]] = await connection.query(
+    `SELECT COUNT(*) as totalTransfers FROM transferencias
+     WHERE conta_origem_id IN (?) OR conta_destino_id IN (?)`,
+    [accountIds, accountIds]
+  );
+  const [[{ totalDeposits }]] = await connection.query(
+    `SELECT COUNT(*) as totalDeposits FROM depositos WHERE conta_id IN (?)`, [accountIds]
+  );
+  const [[{ totalPix }]] = await connection.query(
+    `SELECT COUNT(*) as totalPix FROM pagamentos_pix WHERE conta_id IN (?)`, [accountIds]
+  );
+  const [[{ totalEntries }]] = await connection.query(
+    `SELECT COUNT(*) as totalEntries FROM lancamentos WHERE conta_id IN (?)`, [accountIds]
+  );
+
+  return { totalUsers, totalAccounts, totalTransfers,
+           totalDeposits, totalPix, totalEntries, ids, accountIds };
+}
+
+async function run() {
   let connection;
-  
+
   try {
-    console.log('🧹 Iniciando limpeza cirúrgica de dados de teste...\n');
-    
     connection = await mysql.createConnection(DB_CONFIG);
-    
-    // Start transaction for data consistency
-    await connection.beginTransaction();
-    
-    // Step 1: Find all test users (by prefix or domain)
-    console.log(`📋 Procurando usuários com prefixo "${QA_PREFIX}" ou domínio "${TEST_DOMAIN}"...`);
-    
-    const [testUsers] = await connection.query(
-      `SELECT id FROM usuarios 
-       WHERE nome LIKE CONCAT(?, '%') OR email LIKE CONCAT('%', ?)`,
-      [QA_PREFIX, TEST_DOMAIN]
-    );
-    
-    if (testUsers.length === 0) {
-      console.log('✅ Nenhum usuário de teste encontrado. Nada a limpar.\n');
-      await connection.commit();
-      await connection.end();
+
+    const mode = DRY_RUN ? ' [DRY-RUN]' : REPORT_ONLY ? ' [REPORT]' : '';
+    console.log(`\n🧹 M3 Bank — Limpeza de Dados de Teste${mode}`);
+    console.log('─'.repeat(50));
+
+    const report = await getReport(connection);
+
+    console.log('\n📊 Dados de teste encontrados:');
+    console.log(`   👤 Usuários:      ${report.totalUsers}`);
+    console.log(`   🏦 Contas:        ${report.totalAccounts}`);
+    console.log(`   💸 Transferências: ${report.totalTransfers}`);
+    console.log(`   💰 Depósitos:     ${report.totalDeposits}`);
+    console.log(`   📱 Pagamentos Pix: ${report.totalPix}`);
+    console.log(`   📋 Lançamentos:   ${report.totalEntries}`);
+
+    if (report.totalUsers === 0) {
+      console.log('\n✅ Banco limpo — nenhum dado de teste encontrado.\n');
       return;
     }
-    
-    const testUserIds = testUsers.map(u => u.id);
-    console.log(`   Encontrados ${testUsers.length} usuários de teste\n`);
-    
-    // Step 2: Get test accounts
-    console.log('📋 Procurando contas associadas aos usuários de teste...');
-    
-    const [testAccounts] = await connection.query(
-      `SELECT id FROM contas WHERE usuario_id IN (?)`,
-      [testUserIds]
-    );
-    
-    if (testAccounts.length === 0) {
-      console.log('   Nenhuma conta encontrada\n');
-    } else {
-      console.log(`   Encontradas ${testAccounts.length} contas de teste\n`);
+
+    if (REPORT_ONLY || DRY_RUN) {
+      if (DRY_RUN) {
+        console.log('\n⚠️  Modo DRY-RUN — nenhum dado foi apagado.');
+        console.log('   Execute sem --dry-run para realizar a limpeza.\n');
+      }
+      return;
     }
-    
-    const testAccountIds = testAccounts.map(a => a.id);
-    
-    // Step 3: Delete transactions (VERY CAREFUL - preserves data integrity)
-    if (testAccountIds.length > 0) {
-      console.log('🗑️  Deletando transações de teste...');
-      
-      // Delete transfers where origin or destination is a test account
-      const [transferResult] = await connection.query(
-        `DELETE FROM transferencias 
-         WHERE conta_origem_id IN (?) OR conta_destino_id IN (?)`,
-        [testAccountIds, testAccountIds]
+
+    // Executa a limpeza
+    console.log('\n🗑️  Iniciando limpeza...');
+    await connection.beginTransaction();
+
+    const { accountIds, ids } = report;
+
+    if (accountIds && accountIds.length > 0) {
+      const [r1] = await connection.query(
+        `DELETE FROM transferencias WHERE conta_origem_id IN (?) OR conta_destino_id IN (?)`,
+        [accountIds, accountIds]
       );
-      console.log(`   ✓ ${transferResult.affectedRows} transferências deletadas`);
-      
-      // Delete deposits
-      const [depositResult] = await connection.query(
-        `DELETE FROM depositos WHERE conta_destino_id IN (?)`,
-        [testAccountIds]
+      console.log(`   ✓ ${r1.affectedRows} transferências removidas`);
+
+      const [r2] = await connection.query(
+        `DELETE FROM depositos WHERE conta_id IN (?)`, [accountIds]
       );
-      console.log(`   ✓ ${depositResult.affectedRows} depósitos deletados`);
-      
-      // Delete payments
-      const [paymentResult] = await connection.query(
-        `DELETE FROM pagamentos_pix WHERE conta_id IN (?)`,
-        [testAccountIds]
+      console.log(`   ✓ ${r2.affectedRows} depósitos removidos`);
+
+      const [r3] = await connection.query(
+        `DELETE FROM pagamentos_pix WHERE conta_id IN (?)`, [accountIds]
       );
-      console.log(`   ✓ ${paymentResult.affectedRows} pagamentos deletados`);
-      
-      // Delete statements
-      const [statementResult] = await connection.query(
-        `DELETE FROM lancamentos WHERE conta_id IN (?)`,
-        [testAccountIds]
+      console.log(`   ✓ ${r3.affectedRows} pagamentos Pix removidos`);
+
+      const [r4] = await connection.query(
+        `DELETE FROM lancamentos WHERE conta_id IN (?)`, [accountIds]
       );
-      console.log(`   ✓ ${statementResult.affectedRows} lançamentos deletados\n`);
+      console.log(`   ✓ ${r4.affectedRows} lançamentos removidos`);
+
+      const [r5] = await connection.query(
+        `DELETE FROM contas WHERE id IN (?)`, [accountIds]
+      );
+      console.log(`   ✓ ${r5.affectedRows} contas removidas`);
     }
-    
-    // Step 4: Delete test accounts
-    console.log('🗑️  Deletando contas de teste...');
-    
-    const [accountDeleteResult] = await connection.query(
-      `DELETE FROM contas WHERE id IN (?)`,
-      [testAccountIds.length > 0 ? testAccountIds : [-1]]
+
+    const { where, values } = buildWhereClause();
+    const [r6] = await connection.query(
+      `DELETE FROM usuarios WHERE ${where}`, values
     );
-    console.log(`   ✓ ${accountDeleteResult.affectedRows} contas deletadas\n`);
-    
-    // Step 5: Delete test users
-    console.log('🗑️  Deletando usuários de teste...');
-    
-    const [userDeleteResult] = await connection.query(
-      `DELETE FROM usuarios WHERE id IN (?)`,
-      [testUserIds]
-    );
-    console.log(`   ✓ ${userDeleteResult.affectedRows} usuários deletados\n`);
-    
-    // Commit transaction
+    console.log(`   ✓ ${r6.affectedRows} usuários removidos`);
+
     await connection.commit();
-    
-    console.log('✅ Limpeza cirúrgica concluída com sucesso!');
-    console.log(`   Total de usuários removidos: ${userDeleteResult.affectedRows}`);
-    console.log(`   Total de contas removidas: ${accountDeleteResult.affectedRows}`);
-    console.log(`   Dados de testes exploratórios preservados ✓\n`);
-    
+
+    console.log('\n✅ Limpeza concluída com sucesso!');
+    console.log('   Dados de seed e exploratórios preservados.\n');
+
   } catch (error) {
-    if (connection) {
-      await connection.rollback();
-    }
-    console.error('❌ Erro durante a limpeza:', error.message);
+    if (connection) await connection.rollback();
+    console.error('\n❌ Erro durante a limpeza:', error.message);
     process.exit(1);
   } finally {
-    if (connection) {
-      await connection.end();
-    }
+    if (connection) await connection.end();
   }
 }
 
-// Run cleanup
-cleanupTests();
+run();

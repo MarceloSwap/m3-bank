@@ -1,122 +1,30 @@
-import styled from 'styled-components';
-
 export default function Modal({ type = 'info', title, message, onClose, actions = [] }) {
   const hasActions = actions.length > 0;
 
   return (
-    <Backdrop onClick={onClose}>
-      <Dialog role="dialog" onClick={(event) => event.stopPropagation()}>
-        <Badge $type={type}>{title || 'Aviso'}</Badge>
+    <div className="modal__backdrop" onClick={onClose}>
+      <div className="modal__dialog" role="dialog" onClick={(event) => event.stopPropagation()}>
+        <h2 className={`modal__badge modal__badge--${type}`}>{title || 'Aviso'}</h2>
         <p>{message}</p>
         {hasActions ? (
-          <ActionsRow>
+          <div className="modal__actions">
             {actions.map((action) => (
-              <ActionButton
+              <button
                 key={action.label}
                 type="button"
-                $variant={action.variant || 'primary'}
+                className={`modal__action modal__action--${action.variant || 'primary'}`}
                 onClick={action.onClick}
               >
                 {action.label}
-              </ActionButton>
+              </button>
             ))}
-          </ActionsRow>
+          </div>
         ) : (
-          <CloseButton type="button" onClick={onClose}>
+          <button className="modal__close" type="button" onClick={onClose}>
             Fechar
-          </CloseButton>
+          </button>
         )}
-      </Dialog>
-    </Backdrop>
+      </div>
+    </div>
   );
 }
-
-const Backdrop = styled.div`
-  position: fixed;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  background: rgba(11, 19, 37, 0.8);
-  backdrop-filter: blur(6px);
-  padding: 24px;
-  z-index: 1000;
-`;
-
-const Dialog = styled.div`
-  width: min(420px, 100%);
-  border-radius: ${({ theme }) => theme.radius.lg};
-  background: ${({ theme }) => theme.colors.secondary};
-  border: 1px solid ${({ theme }) => theme.colors.borderLight};
-  color: ${({ theme }) => theme.colors.light};
-  padding: 32px;
-  box-shadow: ${({ theme }) => theme.shadows.hover};
-  text-align: center;
-
-  p {
-    line-height: 1.6;
-    margin-top: 16px;
-    color: ${({ theme }) => theme.colors.inkSoft};
-  }
-`;
-
-const Badge = styled.strong`
-  display: inline-flex;
-  margin-bottom: 8px;
-  padding: 8px 16px;
-  border-radius: 999px;
-  font-weight: bold;
-  text-transform: uppercase;
-  font-size: 0.85rem;
-  letter-spacing: 0.05em;
-  background: ${({ $type, theme }) =>
-    $type === 'success'
-      ? theme.colors.success
-      : $type === 'error'
-        ? theme.colors.danger
-        : theme.colors.primary};
-  color: ${({ $type }) => $type === 'success' || $type === 'error' ? '#fff' : '#000'};
-`;
-
-const CloseButton = styled.button`
-  margin-top: 24px;
-  border: 0;
-  border-radius: 999px;
-  background: ${({ theme }) => theme.colors.primary};
-  color: #000;
-  font-weight: bold;
-  padding: 12px 32px;
-  cursor: pointer;
-  transition: transform 0.2s ease, filter 0.2s ease;
-  width: 100%;
-
-  &:hover {
-    transform: translateY(-2px);
-    filter: brightness(1.1);
-  }
-`;
-
-const ActionsRow = styled.div`
-  margin-top: 24px;
-  display: grid;
-  gap: 10px;
-`;
-
-const ActionButton = styled.button`
-  border: 1px solid
-    ${({ $variant, theme }) =>
-      $variant === 'secondary' ? theme.colors.borderLight : theme.colors.primary};
-  border-radius: 999px;
-  background: ${({ $variant, theme }) =>
-    $variant === 'secondary' ? 'transparent' : theme.colors.primary};
-  color: ${({ $variant }) => ($variant === 'secondary' ? '#fff' : '#000')};
-  font-weight: bold;
-  padding: 12px 20px;
-  cursor: pointer;
-  transition: transform 0.2s ease, filter 0.2s ease;
-  width: 100%;
-
-  &:hover {
-    transform: translateY(-2px);
-    filter: brightness(1.1);
-  }
-`;

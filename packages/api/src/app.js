@@ -27,7 +27,24 @@ async function start() {
     res.status(200).json({ status: 'ok' });
   });
 
-  app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+  app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+    swaggerOptions: {
+      docExpansion: 'list',
+      defaultModelsExpandDepth: 1,
+      defaultModelExpandDepth: 2,
+      displayRequestDuration: true,
+      filter: true,
+      showExtensions: true,
+      tryItOutEnabled: false
+    },
+    customCss: `
+      .swagger-ui .opblock-summary-description { font-weight: 600; }
+      .swagger-ui .response-col_status { font-weight: 700; font-size: 1rem; }
+      .swagger-ui table.responses-table { display: table !important; }
+      .swagger-ui .responses-inner { display: block !important; }
+      .swagger-ui .opblock.is-open .opblock-body { display: block !important; }
+    `
+  }));
   app.use('/api/auth', authRoutes);
   app.use('/api/accounts', accountRoutes);
   app.use('/api/transfers', transferRoutes);

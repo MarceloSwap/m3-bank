@@ -6,14 +6,14 @@
       "password": "amazonia123",
       "cpf": "18233456001",
       "createWithBalance": true,
-      "balance": 2500
+      "balance": 3350
     },
     {
       "name": "Bruno Solimoes",
       "email": "bruno.solimoes@m3bank.test",
       "password": "rioverde123",
       "cpf": "26411893022",
-      "createWithBalance": true,
+      "createWithBalance": false,
       "balance": 7800
     },
     {
@@ -21,16 +21,8 @@
       "email": "carla.tapajos@m3bank.test",
       "password": "para1234",
       "cpf": "39577124039",
-      "createWithBalance": false,
-      "balance": 0
-    },
-    {
-      "name": "Diego Negro",
-      "email": "diego.negro@m3bank.test",
-      "password": "barco456",
-      "cpf": "42055731047",
       "createWithBalance": true,
-      "balance": 11000
+      "balance": 0
     }
   ]
 }

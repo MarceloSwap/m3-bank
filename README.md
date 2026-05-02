@@ -1,37 +1,85 @@
+# M3 Bank
+
+Monorepo de portfolio para QA Engineering com API REST/GraphQL na porta `3334`, Web Next.js na porta `3000`, Cypress E2E, Supertest API, GitFlow, CI/CD e documentacao baseada em ISO 29119-3.
+
+## Stack de QA
+
+- **E2E Web:** Cypress em `packages/tests/ui`.
+- **API:** Supertest + Mocha + Mochawesome em `packages/tests/api`.
+- **Massa de dados:** Cypress fixtures em `packages/tests/ui/cypress/fixtures/usuarios.json` e scripts de seed da API.
+- **Tecnicas:** Analise de Valor Limite, rastreabilidade RN/CT, SBTM e matriz de risco Impacto x Probabilidade.
+- **CI/CD:** `.github/workflows/e2e-tests.yml` executa Cypress em `push` e `pull_request` para `develop`, subindo MySQL, API e Web antes da automacao.
+- **Wiki/ISO 29119-3:** arquivos em `docs/wiki`.
+- **Nomenclatura validada:** RN01 = Cadastro de Contas; RN02 = Login e Autenticacao.
+
+## GitFlow
+
+- `main`: producao, recebe merges estabilizados.
+- `develop`: integracao, alvo da pipeline E2E.
+- `feature/<descricao>`: evolucao funcional ou tecnica.
+- `test/<descricao>`: automacao, massa de teste, charters e evidencias de QA.
+- `hotfix/<descricao>`: correcao urgente a partir de `main`.
+
+Fluxo recomendado:
+
+```bash
+git checkout main
+git checkout -b develop
+git checkout -b feature/ui-clean-layout
+git checkout -b test/rn01-rn07-cypress
+```
+
+## Comandos principais
+
+```bash
+npm install
+npm run seed
+npm run dev:api
+npm run dev:web
+npm run test:e2e
+npm run test:api
+```
+
+## Documentacao de entrega
+
+- Casos de Teste ISO 29119-3: `docs/wiki/04-casos-de-teste-iso-29119-3.md`
+- Testes Exploratorios SBTM: `docs/wiki/05-testes-exploratorios-sbtm.md`
+- Reporte de Defeitos: `docs/wiki/06-reporte-de-defeitos.md`
+- Relatorio de Execucao QA: `docs/wiki/07-relatorio-execucao-qa.md`
+- Mapa mental API: `docs/mindmaps/api.md`
+- Mapa mental Web: `docs/mindmaps/web.md`
+- Resumo das acoes: `docs/resumo-acoes.txt`
+
+---
+
 # 1. Regras de Negócio e Requisitos
 
 Este documento centraliza todas as regras de negócio, limites de sistema e comportamentos esperados do **M3 Bank**. Ele serve como a **Fonte da Verdade (Source of Truth)** para a automação de testes (Cypress, Supertest) e para as sessões de testes exploratórios.
 
 ---
 
-## 1. Autenticação e Login
-O acesso ao sistema é restrito e gerenciado via tokens JWT (JSON Web Tokens).
+## 1. Cadastro de Contas
+Fluxo de entrada de novos usuarios no M3 Bank.
 
-* **RN01.01:** Os campos `E-mail` e `Senha` são de preenchimento obrigatório.
-* **RN01.02:** A tentativa de login com campos vazios deve exibir na UI a mensagem exata: *"Usuário e senha precisam ser preenchidos"*.
-* **RN01.03:** O sistema não deve autorizar o acesso de credenciais inválidas ou não cadastradas, retornando um erro de autenticação amigável.
-* **RN01.04:** Após o login com sucesso, o usuário deve ser redirecionado automaticamente para a `Home` (Dashboard).
-* **RN01.05 (API):** O token gerado no back-end possui um tempo de expiração estrito de **1 hora**. Requisições com tokens expirados ou adulterados devem retornar erro HTTP `401 Unauthorized`.
-* **RN01.06 (Segurança):** Após 3 tentativas de login falhas consecutivas para o mesmo e-mail, o sistema deve exibir a mensagem: *"Muitas tentativas falhas. Tente novamente em 5 minutos."*
+* **RN01.01:** Os campos `Nome`, `E-mail`, `Senha` e `Confirmacao de senha` sao obrigatorios.
+* **RN01.02:** O cadastro valido deve criar a conta com sucesso.
+* **RN01.03:** O sistema deve bloquear cadastro com e-mail ja existente.
+* **RN01.04:** A senha deve respeitar o limite minimo definido para cadastro.
+* **RN01.05:** As entradas de `Senha` e `Confirmacao de senha` devem ser exatamente iguais.
+* **RN01.06 (API):** A conta criada pela API deve iniciar com saldo de **R$ 1.000,00** quando a regra de saldo inicial estiver ativa.
 
 ---
 
-## 2. Cadastro de Contas
-Fluxo de entrada de novos usuários no M3 Bank.
+## 2. Login e Autenticacao
+O acesso ao sistema e restrito e gerenciado via tokens JWT (JSON Web Tokens).
 
-* **RN02.01:** Os campos `Nome`, `E-mail`, `Senha` e `Confirmação de senha` são obrigatórios.
-* **RN02.02:** Validações de campos vazios devem retornar as seguintes mensagens na interface:
-  * *"Nome não pode ser vazio"*
-  * *"Email não pode ser vazio"*
-  * *"Senha não pode ser vazio"*
-  * *"Confirmar senha não pode ser vazio"*
-* **RN02.03:** As entradas de `Senha` e `Confirmação de senha` devem ser exatamente iguais.
-* **RN02.04:** O formulário possui um toggle/checkbox chamado *"Criar conta com saldo"*:
-  * Se **Ativo**: A conta é criada com saldo inicial de **R$ 1.000,00**.
-  * Se **Inativo**: A conta é criada com saldo inicial de **R$ 0,00**.
-* **RN02.05:** O sucesso no cadastro deve exibir na tela o **número da conta criada**, que será usado para recebimento de transferências.
-* **RN02.06 (Validação):** O campo e-mail deve validar o formato padrão. Entradas inválidas devem ser bloqueadas com a mensagem: *"Formato de e-mail inválido"*.
-* **RN02.07 (Força da Senha):** A senha deve conter no mínimo 6 caracteres.
+* **RN02.01:** Os campos `E-mail` e `Senha` sao de preenchimento obrigatorio.
+* **RN02.02:** Credenciais validas devem autenticar o usuario e armazenar um JWT.
+* **RN02.03:** O sistema deve rejeitar e-mail nao cadastrado.
+* **RN02.04:** O sistema deve rejeitar senha incorreta.
+* **RN02.05:** A tentativa de login com campos vazios deve exibir mensagem de validacao na UI.
+* **RN02.06 (API):** O login valido deve retornar token JWT.
+* **RN02.07 (Seguranca):** Requisicoes autenticadas sem token ou com token invalido devem retornar HTTP `401 Unauthorized`.
 
 ---
 

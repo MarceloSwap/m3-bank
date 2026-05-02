@@ -8,6 +8,9 @@
     "test:e2e": "cypress run --project ui",
     "test:e2e:open": "cypress open --project ui",
     "test:all": "npm run test:api && npm run test:e2e",
+    "cleanup": "node api/scripts/cleanup-tests.js",
+    "cleanup:dry": "node api/scripts/cleanup-tests.js --dry-run",
+    "cleanup:report": "node api/scripts/cleanup-tests.js --report",
     "cleanup-qa": "node api/scripts/cleanup-tests.js",
     "seed-db": "npm --workspace packages/api run seed"
   },

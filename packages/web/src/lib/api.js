@@ -6,6 +6,19 @@ const api = axios.create({
 
 let unauthorizedHandler = null;
 
+api.interceptors.request.use((config) => {
+  if (!config.headers.Authorization && typeof window !== 'undefined') {
+    const storedSession = window.localStorage.getItem('m3-bank-auth');
+    if (storedSession) {
+      const parsed = JSON.parse(storedSession);
+      if (parsed?.token) {
+        config.headers.Authorization = `Bearer ${parsed.token}`;
+      }
+    }
+  }
+  return config;
+});
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {

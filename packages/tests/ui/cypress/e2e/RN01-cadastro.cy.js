@@ -1,28 +1,22 @@
 /// <reference types="cypress" />
 
 describe('RN01 - Cadastro de Contas', () => {
-  const QA_PREFIX = 'qa_';
-
   beforeEach(() => {
-    cy.visit('/'); 
     cy.clearLocalStorage();
-    cy.contains('button', 'Cadastrar').should('be.visible').click();
+    cy.visit('/');
+    cy.contains('button', 'Cadastrar').click();
   });
 
-  it('Deve cadastrar um usuário com sucesso (Happy Path)', () => {
+  it('[TC-RN01-001] Cadastro - cria conta com sucesso', () => {
     cy.fixture('usuarios').then((massa) => {
-      const user = massa.cadastroValido;
-      const uniqueEmail = `${QA_PREFIX}user_${Date.now()}@m3bank.test`;
-      
-      // Gera um CPF único de 11 dígitos para evitar conflito no MySQL!
-      const uniqueCpf = Date.now().toString().slice(-11);
+      const email = `qa_cadastro_${Date.now()}@m3bank.test`;
+      const cpf = Date.now().toString().slice(-11).padStart(11, '1');
 
-      cy.get('form').find('input').eq(0).type(user.nome); 
-      cy.get('form').find('input').eq(1).type(uniqueEmail);   
-      cy.get('form').find('input').eq(2).type(uniqueCpf);  // Usa o CPF dinâmico aqui
-      cy.get('form').find('input').eq(3).type(user.senha); 
-      cy.get('form').find('input').eq(4).type(user.senha); 
-
+      cy.contains('label', 'Nome').find('input').type(massa.cadastroValido.nome);
+      cy.contains('label', 'E-mail').find('input').type(email);
+      cy.contains('label', 'CPF').find('input').type(cpf);
+      cy.contains('label', 'Senha').find('input').type(massa.cadastroValido.senha);
+      cy.contains('label', 'Confirmar senha').find('input').type(massa.cadastroValido.senha);
       cy.contains('button', 'Criar conta').click();
 
       cy.contains('Conta criada com sucesso', { timeout: 10000 }).should('be.visible');
@@ -30,48 +24,35 @@ describe('RN01 - Cadastro de Contas', () => {
     });
   });
 
-  it('Deve exibir erro ao tentar cadastrar senhas diferentes', () => {
+  it('[TC-RN01-002] Cadastro - bloqueia senhas divergentes', () => {
     cy.fixture('usuarios').then((massa) => {
-      const user = massa.cadastroValido;
-      const uniqueCpf = Date.now().toString().slice(-11);
-
-      cy.get('form').find('input').eq(0).type(user.nome);
-      cy.get('form').find('input').eq(1).type(`${QA_PREFIX}erro@m3bank.test`);
-      cy.get('form').find('input').eq(2).type(uniqueCpf);
-      
-      // Digitamos a senha certa no primeiro campo
-      cy.get('form').find('input').eq(3).type(user.senha);
-      
-      // No segundo, concatenamos "ERRADA" para garantir 100% que será diferente
-      // O .blur() força o React a atualizar o estado antes do clique
-      cy.get('form').find('input').eq(4).type(user.senha + 'ERRADA').blur(); 
-
+      cy.contains('label', 'Nome').find('input').type(massa.cadastroValido.nome);
+      cy.contains('label', 'E-mail').find('input').type(`qa_div_${Date.now()}@m3bank.test`);
+      cy.contains('label', 'CPF').find('input').type(Date.now().toString().slice(-11).padStart(11, '1'));
+      cy.contains('label', 'Senha').find('input').type(massa.cadastroValido.senha);
+      cy.contains('label', 'Confirmar senha').find('input').type(`${massa.cadastroValido.senha}X`);
       cy.contains('button', 'Criar conta').click();
 
-      // Agora a validação é obrigada a aparecer
-      cy.contains('As senhas não coincidem').should('be.visible');
+      cy.contains('As senhas nao coincidem').should('be.visible');
     });
   });
 
-  it('Deve validar tamanho mínimo de 6 caracteres na senha (Boundary Value)', () => {
+  it('[TC-RN01-003] Cadastro - valida senha curta por valor limite', () => {
     cy.fixture('usuarios').then((massa) => {
-      const invalido = massa.cadastroInvalido;
-
-      cy.get('form').find('input').eq(3).type(invalido.senhaCurta); 
-      cy.get('form').find('input').eq(4).type(invalido.senhaCurta);
-      
+      cy.contains('label', 'Senha').find('input').type(massa.cadastroInvalido.senhaCurta);
+      cy.contains('label', 'Confirmar senha').find('input').type(massa.cadastroInvalido.senhaCurta);
       cy.contains('button', 'Criar conta').click();
 
-      cy.contains('Senha deve conter no mínimo 6 caracteres').should('be.visible');
+      cy.contains('Senha deve conter no minimo 6 caracteres').should('be.visible');
     });
   });
 
-  it('Deve exigir preenchimento de campos obrigatórios', () => {
+  it('[TC-RN01-004] Cadastro - exige campos obrigatorios', () => {
     cy.contains('button', 'Criar conta').click();
 
-    cy.contains('Nome não pode ser vazio').should('be.visible');
-    cy.contains('Email não pode ser vazio').should('be.visible');
-    cy.contains('CPF não pode ser vazio').should('be.visible');
-    cy.contains('Senha não pode ser vazio').should('be.visible');
+    cy.contains('Nome nao pode ser vazio').should('be.visible');
+    cy.contains('Email nao pode ser vazio').should('be.visible');
+    cy.contains('CPF nao pode ser vazio').should('be.visible');
+    cy.contains('Senha nao pode ser vazio').should('be.visible');
   });
 });
