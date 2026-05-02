@@ -9,7 +9,7 @@ Monorepo de portfolio para QA Engineering com API REST/GraphQL na porta `3334`, 
 - **Massa de dados:** Cypress fixtures em `packages/tests/ui/cypress/fixtures/usuarios.json` e scripts de seed da API.
 - **Tecnicas:** Analise de Valor Limite, rastreabilidade RN/CT, SBTM e matriz de risco Impacto x Probabilidade.
 - **CI/CD:** `.github/workflows/e2e-tests.yml` executa Cypress em `push` e `pull_request` para `develop`, subindo MySQL, API e Web antes da automacao.
-- **Wiki/ISO 29119-3:** arquivos em `docs/wiki`.
+- **Wiki/ISO 29119-3:** arquivos em `docs/m3-bank.wiki`.
 - **Nomenclatura validada:** RN01 = Cadastro de Contas; RN02 = Login e Autenticacao.
 
 ## GitFlow
@@ -38,17 +38,31 @@ npm run dev:api
 npm run dev:web
 npm run test:e2e
 npm run test:api
+npm run cleanup:dry
+npm run cleanup
 ```
 
 ## Documentacao de entrega
 
-- Casos de Teste ISO 29119-3: `docs/wiki/04-casos-de-teste-iso-29119-3.md`
-- Testes Exploratorios SBTM: `docs/wiki/05-testes-exploratorios-sbtm.md`
-- Reporte de Defeitos: `docs/wiki/06-reporte-de-defeitos.md`
-- Relatorio de Execucao QA: `docs/wiki/07-relatorio-execucao-qa.md`
+- Wiki local/GitHub Wiki: `docs/m3-bank.wiki`
+- Casos de Teste ISO 29119-3: `docs/m3-bank.wiki/4-Casos-de-Teste.md`
+- Testes Exploratorios SBTM: `docs/m3-bank.wiki/5‐Testes‐Exploratorios.md`
+- Reporte de Defeitos: `docs/m3-bank.wiki/6-Reporte-de-Defeitos.md`
+- Relatorio de Execucao QA: `docs/m3-bank.wiki/7-Relatorios-de-Execucao.md`
 - Mapa mental API: `docs/mindmaps/api.md`
 - Mapa mental Web: `docs/mindmaps/web.md`
-- Resumo das acoes: `docs/resumo-acoes.txt`
+
+## Métricas auditadas em 02/05/2026
+
+| Camada | Testes | Pass | Fail | Taxa |
+|--------|-------:|-----:|-----:|------:|
+| API - Mocha/Supertest | 70 | 69 | 1 | 98,5% |
+| E2E - Cypress | 24 | 23 | 1 | 95,8% |
+| Total | 94 | 92 | 2 | 97,9% |
+
+Falhas conhecidas:
+- RN03 API: contrato divergente em token inválido, retornando `400` quando o teste espera `401`.
+- RN03 E2E: seletor/elemento não encontrado no fluxo headless de limite noturno.
 
 ---
 
