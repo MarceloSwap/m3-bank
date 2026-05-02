@@ -12,6 +12,61 @@ Monorepo de portfolio para QA Engineering com API REST/GraphQL na porta `3334`, 
 - **Wiki/ISO 29119-3:** arquivos em `docs/m3-bank.wiki`.
 - **Nomenclatura validada:** RN01 = Cadastro de Contas; RN02 = Login e Autenticacao.
 
+## Estrutura do projeto de testes
+
+O diretorio `packages/tests` concentra a entrega principal de QA do projeto: automacao de API, automacao E2E, BDD, massa de dados, relatorios e limpeza cirurgica dos dados gerados pelos testes.
+
+```text
+m3-bank/
+  .github/
+    workflows/
+      e2e-tests.yml                  # Pipeline de automacao E2E no GitHub Actions
+  docs/
+    m3-bank.wiki/                    # Documentacao QA baseada em ISO 29119-3
+    mindmaps/                        # Mapas mentais de API e Web
+  packages/
+    api/                             # Backend REST/GraphQL na porta 3334
+    web/                             # Frontend Next.js na porta 3000
+    tests/                           # Principal diretorio de QA e automacao
+      package.json                   # Scripts de teste, limpeza e execucao
+      README.md                      # Documentacao tecnica da suite de testes
+      api/
+        config/
+          baseConfig.js              # Configuracao global dos testes Supertest/Mocha
+        docs/
+          CHARTER-API-VADER.md       # Charter de auditoria VADER
+          GESTAO-DADOS-TESTE.md      # Estrategia de dados e limpeza cirurgica
+        fixtures/                    # Payloads base para testes de API
+        scripts/
+          cleanup-tests.js           # Limpa somente dados gerados pela automacao
+        tests/
+          bdd/                       # Especificacoes Gherkin RN01-RN07
+          rest/                      # Specs Supertest/Mocha RN01-RN07 + VADER
+      ui/
+        cypress.config.js            # Configuracao Cypress
+        cypress/
+          e2e/                       # Specs Cypress RN01-RN07
+          fixtures/
+            usuarios.json            # Massa de dados usada pela UI
+          support/
+            commands.js              # Comandos customizados Cypress
+            e2e.js                   # Setup global Cypress
+```
+
+### Mapa rapido de `packages/tests`
+
+| Caminho | Papel na estrategia de QA |
+|---------|----------------------------|
+| `packages/tests/api/tests/rest` | Testes automatizados de API com Supertest + Mocha |
+| `packages/tests/api/tests/bdd` | Features Gherkin que documentam RN01 a RN07 |
+| `packages/tests/api/tests/rest/VADER-api.spec.js` | Auditoria de resiliência por heuristica VADER |
+| `packages/tests/ui/cypress/e2e` | Testes E2E Cypress dos fluxos reais da aplicacao |
+| `packages/tests/ui/cypress/fixtures` | Massa de dados para automacao de UI |
+| `packages/tests/api/fixtures` | Payloads reutilizaveis para automacao de API |
+| `packages/tests/api/scripts/cleanup-tests.js` | Sanitizacao seletiva dos dados criados pela automacao |
+| `packages/tests/reports` | Relatorios gerados pela execucao da suite |
+| `packages/tests/ui/cypress/screenshots` | Evidencias visuais de falhas E2E |
+
 ## GitFlow
 
 - `main`: producao, recebe merges estabilizados.
@@ -187,13 +242,14 @@ Gerenciamento de dados pessoais e configurações de segurança.
 
 
 
-## Estrutura
+## Estrutura resumida
 
 ```text
 m3-bank/
   package.json
   packages/
     api/
+    tests/
     web/
 ```
 
