@@ -33,10 +33,63 @@ body,
 }
 
 body {
-  background: var(--color-background);
+  position: relative;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(245, 247, 251, 0.9)),
+    var(--color-background);
   color: var(--color-ink);
   font-family: "Segoe UI", Arial, sans-serif;
   overflow-x: hidden;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+body::before {
+  z-index: 0;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(196, 154, 44, 0.22), transparent 28%),
+    radial-gradient(circle at 82% 12%, rgba(36, 48, 71, 0.16), transparent 30%),
+    radial-gradient(circle at 62% 78%, rgba(196, 154, 44, 0.14), transparent 34%),
+    linear-gradient(125deg, #ffffff 0%, #f5f7fb 45%, #fff8e3 100%);
+  background-size: 120% 120%, 130% 130%, 125% 125%, 100% 100%;
+  animation: ambient-gradient 18s ease-in-out infinite alternate;
+}
+
+body::after {
+  z-index: 0;
+  opacity: 0.5;
+  background:
+    repeating-linear-gradient(
+      115deg,
+      transparent 0,
+      transparent 78px,
+      rgba(36, 48, 71, 0.07) 79px,
+      rgba(36, 48, 71, 0.07) 80px,
+      transparent 81px,
+      transparent 136px
+    ),
+    repeating-linear-gradient(
+      25deg,
+      transparent 0,
+      transparent 118px,
+      rgba(196, 154, 44, 0.08) 119px,
+      rgba(196, 154, 44, 0.08) 120px,
+      transparent 121px,
+      transparent 190px
+    );
+  background-size: 180% 180%;
+  animation: ambient-lines 24s linear infinite;
+}
+
+#__next {
+  position: relative;
+  z-index: 1;
 }
 
 a {
@@ -784,6 +837,31 @@ svg {
   to {
     opacity: 0;
     transform: translateY(-6px) scale(0.98);
+  }
+}
+
+@keyframes ambient-gradient {
+  from {
+    background-position: 0% 45%, 100% 0%, 65% 100%, 0 0;
+  }
+  to {
+    background-position: 22% 60%, 78% 18%, 42% 82%, 0 0;
+  }
+}
+
+@keyframes ambient-lines {
+  from {
+    background-position: 0 0, 0 0;
+  }
+  to {
+    background-position: 280px -180px, -240px 220px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::before,
+  body::after {
+    animation: none;
   }
 }
 
