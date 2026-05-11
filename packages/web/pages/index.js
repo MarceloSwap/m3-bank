@@ -110,7 +110,7 @@ export default function IndexPage() {
     <>
       <div className="auth-page">
         <section className="auth-hero">
-          <img src="/brand/m3-logo2.png" alt="M3 Bank" />
+          <img src="/brand/m3-logo2.png" alt="M3 Bank" style={{ width: '150px', height: 'auto' }} />
           <h2>Sabor banco.</h2>
           <p>
             Faca login, cadastre contas, execute transferencias, valide limite noturno e simule

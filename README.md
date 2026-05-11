@@ -286,6 +286,13 @@ APP_TIMEZONE=America/Sao_Paulo
 NEXT_PUBLIC_API_URL=http://localhost:3334/api
 ```
 
+Para acessar o frontend por um dispositivo movel na mesma rede, troque `localhost`
+pelo IP da maquina que esta rodando a API, por exemplo:
+
+```env
+NEXT_PUBLIC_API_URL=http://192.168.0.10:3334/api
+```
+
 ## 4. Instalar dependências
 
 Na raiz do projeto:
@@ -311,9 +318,13 @@ npm run dev:api
 npm run dev:web
 ```
 
+Ao iniciar o frontend, o terminal tambem exibira o link `Celular` para abrir em
+outros dispositivos conectados ao mesmo Wi-Fi, por exemplo `http://192.168.0.10:3000`.
+
 ## URLs de acesso
 
 - **Frontend:** http://localhost:3000
+- **Frontend na rede local:** use o endereco `Celular` exibido pelo terminal
 - **API REST:** http://localhost:3334/api
 - **Swagger Docs:** http://localhost:3334/docs
 - **GraphQL:** http://localhost:3334/graphql
