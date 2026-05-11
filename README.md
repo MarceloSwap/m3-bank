@@ -1,6 +1,6 @@
 # M3 Bank
 
-Monorepo de portfolio para QA Engineering com API REST/GraphQL na porta `3334`, Web Next.js na porta `3000`, Cypress E2E, Supertest API, GitFlow, CI/CD e documentacao baseada em ISO 29119-3.
+Monorepo de portfolio para QA Engineering com API REST/GraphQL na porta `3334`, Web Next.js na porta `3000`, Cypress E2E, Supertest API, GitFlow e documentacao baseada em ISO 29119-3.
 
 ## Stack de QA
 
@@ -11,6 +11,49 @@ Monorepo de portfolio para QA Engineering com API REST/GraphQL na porta `3334`, 
 - **CI/CD:** `.github/workflows/e2e-tests.yml` executa Cypress em `push` e `pull_request` para `develop`, subindo MySQL, API e Web antes da automacao.
 - **Wiki/ISO 29119-3:** arquivos em `docs/m3-bank.wiki`.
 - **Nomenclatura validada:** RN01 = Cadastro de Contas; RN02 = Login e Autenticacao.
+
+## Estrutura do projeto de testes
+
+O diretorio `packages/tests` concentra a entrega principal de QA do projeto: automacao de API, automacao E2E, BDD, massa de dados, relatorios e limpeza cirurgica dos dados gerados pelos testes.
+
+```text
+m3-bank/
+├── docs/
+│   ├── m3-bank.wiki/          # Documentação QA (ISO 29119-3)[cite: 1]
+│   └── mindmaps/              # Mapas mentais de API e Web[cite: 1]
+└── packages/
+    ├── api/                   # Backend REST/GraphQL (Porta 3334)[cite: 1]
+    ├── web/                   # Frontend Next.js (Porta 3000)[cite: 1]
+    └── tests/                 # Core de QA e Automação[cite: 1]
+        ├── api/               # Testes de API (Supertest + Mocha)[cite: 1]
+        │   ├── config/        # Configurações globais[cite: 1]
+        │   ├── docs/          # Auditoria VADER e Gestão de Dados[cite: 1]
+        │   ├── fixtures/      # Payloads e massas de teste[cite: 1]
+        │   ├── scripts/       # Scripts de limpeza cirúrgica[cite: 1]
+        │   └── tests/         # Specs BDD (Gherkin) e REST[cite: 1]
+        ├── ui/                # Testes End-to-End (Cypress)[cite: 1]
+        │   ├── cypress/
+        │   │   ├── e2e/       # Specs RN01-RN07[cite: 1]
+        │   │   ├── fixtures/  # Massa de dados da UI[cite: 1]
+        │   │   └── support/   # Commands e Setup global[cite: 1]
+        │   └── cypress.config.js
+        ├── package.json       # Scripts de execução e CI/CD[cite: 1]
+        └── README.md          # Guia técnico da suíte de testes[cite: 1]
+```
+
+### Mapa rapido de `packages/tests`
+
+| Caminho | Papel na estrategia de QA |
+|---------|----------------------------|
+| `packages/tests/api/tests/rest` | Testes automatizados de API com Supertest + Mocha |
+| `packages/tests/api/tests/bdd` | Features Gherkin que documentam RN01 a RN07 |
+| `packages/tests/api/tests/rest/VADER-api.spec.js` | Auditoria de resiliência por heuristica VADER |
+| `packages/tests/ui/cypress/e2e` | Testes E2E Cypress dos fluxos reais da aplicacao |
+| `packages/tests/ui/cypress/fixtures` | Massa de dados para automacao de UI |
+| `packages/tests/api/fixtures` | Payloads reutilizaveis para automacao de API |
+| `packages/tests/api/scripts/cleanup-tests.js` | Sanitizacao seletiva dos dados criados pela automacao |
+| `packages/tests/reports` | Relatorios gerados pela execucao da suite |
+| `packages/tests/ui/cypress/screenshots` | Evidencias visuais de falhas E2E |
 
 ## GitFlow
 
@@ -61,11 +104,11 @@ npm run cleanup
 - Relatorio de Execucao QA: `docs/m3-bank.wiki/7-Relatorios-de-Execucao.md`
 - Mapa mental API: `docs/mindmaps/api.md`
 
-  <img src="https://github.com/MarceloSwap/m3-bank/blob/8f0f11ab77b26f0412b58d5b7a1d0f1117c14b48/docs/01%20test%20api.gif" alt="Mocha-Chai-Supertest" whith="100%">
+  <img src="https://github.com/MarceloSwap/m3-bank/blob/69c36255c8bdf09f9db472b3bf4d80ac6d048f83/docs/mindmaps/api.png" alt="API" whith="100%">
 
 - Mapa mental Web: `docs/mindmaps/web.md`
 
-  <img src="https://github.com/MarceloSwap/m3-bank/blob/8f0f11ab77b26f0412b58d5b7a1d0f1117c14b48/docs/01%20test%20api.gif" alt="Mocha-Chai-Supertest" whith="100%">
+  <img src="https://github.com/MarceloSwap/m3-bank/blob/69c36255c8bdf09f9db472b3bf4d80ac6d048f83/docs/mindmaps/frontend.png" alt="Frontend" whith="100%">
 
 ## Métricas auditadas em 02/05/2026
 
@@ -187,13 +230,14 @@ Gerenciamento de dados pessoais e configurações de segurança.
 
 
 
-## Estrutura
+## Estrutura resumida
 
 ```text
 m3-bank/
   package.json
   packages/
     api/
+    tests/
     web/
 ```
 
@@ -242,6 +286,13 @@ APP_TIMEZONE=America/Sao_Paulo
 NEXT_PUBLIC_API_URL=http://localhost:3334/api
 ```
 
+Para acessar o frontend por um dispositivo movel na mesma rede, troque `localhost`
+pelo IP da maquina que esta rodando a API, por exemplo:
+
+```env
+NEXT_PUBLIC_API_URL=http://192.168.0.10:3334/api
+```
+
 ## 4. Instalar dependências
 
 Na raiz do projeto:
@@ -267,9 +318,13 @@ npm run dev:api
 npm run dev:web
 ```
 
+Ao iniciar o frontend, o terminal tambem exibira o link `Celular` para abrir em
+outros dispositivos conectados ao mesmo Wi-Fi, por exemplo `http://192.168.0.10:3000`.
+
 ## URLs de acesso
 
 - **Frontend:** http://localhost:3000
+- **Frontend na rede local:** use o endereco `Celular` exibido pelo terminal
 - **API REST:** http://localhost:3334/api
 - **Swagger Docs:** http://localhost:3334/docs
 - **GraphQL:** http://localhost:3334/graphql
